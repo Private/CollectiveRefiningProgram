@@ -247,12 +247,6 @@ def main(args):
 
     dbfile = configtree.findtext("./database/filename")
 
-    if not os.path.isfile(dbfile):
-        # Some skank has sabotaged the database. It's time for an update.        
-        updatedb.updateDatabase(dbfile)
-
-    db = sql.connect(dbfile)
-
     cans = []
 
     for c in configtree.iter('character'):        

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config>
-  <!-- This file contains the LBP options. -->
+  <!-- This file contains the CRP options. -->
 
   <database>
     <!-- Not much reason to change this, unless you really really really want to run off
@@ -8,14 +8,20 @@
     <filename>latest.sqlite</filename>
   </database>
   
-  <namingpatterns>
-    <!-- This segment allows user-defined can naming patterns. These are fed straight to 
-	 the standard Python re package, so see code or documentation for more info. -->
+  <cache>
+    <!-- I'm adding a cache here, I should have done do long ago. Good news! -->
+    <filename>cache.sqlite</filename>
+  </cache>
 
-    <!-- This reads as "Any character, any number of times, then "LBP", then any 
-	 character, any number of times". In other words, any string with "LBP" in 
+  <namingpatterns>
+    <!-- This segment allows user-defined container naming patterns. These are fed 
+	 straight to the standard Python re package, so see code or documentation 
+	 for more info. -->
+
+    <!-- This reads as "Any character, any number of times, then "CRP", then any 
+	 character, any number of times". In other words, any string with "CRP" in 
 	 it. -->
-    <pattern enabled='true'>(?:.*)(LBP)(?:.*)</pattern>
+    <pattern enabled='true'>(?:.*)(CRP)(?:.*)</pattern>
  
     <pattern enabled='true'>Sell</pattern>
     <pattern enabled='true'>Refine</pattern>
@@ -40,7 +46,8 @@
     </avg>
   
     <!-- Read this as "Find the lowest sell order in each trade hub. Value is the 
-	 minimum of these." -->
+	 minimum of these". I left this in here as an example, only the first 
+	 market expression is evaluated. -->
     <min>
       <query system='Jita' stat='sell/min'/>
       <query system='Amarr' stat='sell/min'/>
@@ -55,7 +62,7 @@
     <characters>
       <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
 	   though I may not have any suitable cans at the moment. -->      
-      <character note='EvilMarvin (Public LBP Key)' enabled='true'>
+      <character note='EvilMarvin (Public CRP Key)' enabled='true'>
 	<keyID>2747696</keyID>
 	<vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
 	<name>EvilMarvin</name>
@@ -75,7 +82,7 @@
   </apikeys>
 
   <outputs>
-    <!-- I've added an output section as I've implemented another output module. -->
+    <!-- I've added an output section to make custom output "easier". -->
     <output enabled='true' module='html'> 
       <args outputprefix='' uniquefiles='true'/>
     </output>

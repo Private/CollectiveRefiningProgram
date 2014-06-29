@@ -7,17 +7,18 @@ import bz2
 import httplib
 import sqlite3 as sql
 
-global __db
+global db
 
 
 def initialize(filename):
 
-    global __db
+    global db
 
-
-    pass
-
-
+    if not os.path.isfile(filename):
+        # Some skank has sabotaged the database. It's time for an update.        
+        updateDatabase(filename)
+        
+    db = sql.connect(filename)
 
 
 
