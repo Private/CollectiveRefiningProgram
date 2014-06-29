@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+  <!-- This file contains the LBP options. -->
+
+  <database>
+    <!-- Not much reason to change this, unless you really really really want to run off
+	 multiple different databases. -->
+    <filename>latest.sqlite</filename>
+  </database>
+  
+  <namingpatterns>
+    <!-- This segment allows user-defined can naming patterns. These are fed straight to 
+	 the standard Python re package, so see code or documentation for more info. -->
+
+    <!-- This reads as "Any character, any number of times, then "LBP", then any 
+	 character, any number of times". In other words, any string with "LBP" in 
+	 it. -->
+    <pattern enabled='true'>(?:.*)(LBP)(?:.*)</pattern>
+ 
+    <pattern enabled='true'>Sell</pattern>
+    <pattern enabled='true'>Refine</pattern>
+    <pattern enabled='true'>Unsorted</pattern>
+            
+  </namingpatterns>
+  
+  <market>
+    <!-- The market segment allows you to control how prices are estimated. -->
+
+    <!-- This is currently rather rudimentary. Currently operations "min", "max"
+	 and "avg" (average) are supported. Beware, every 'query' node leads to 
+	 a price lookup at eve-central. These are performed in serial, so while
+	 you are unlikely to have your IP banned for spamming, complex calculations
+	 will take a long time. The majority of the execution time is spent waiting
+	 for eve-central replies, even with a single query. -->
+
+    <!-- Only the first expression is used. -->
+    <avg>
+      <query system='Jita' stat='sell/min'/>
+      <query system='Jita' stat='buy/max'/>
+    </avg>
+  
+    <!-- Read this as "Find the lowest sell order in each trade hub. Value is the 
+	 minimum of these." -->
+    <min>
+      <query system='Jita' stat='sell/min'/>
+      <query system='Amarr' stat='sell/min'/>
+      <query system='Rens' stat='sell/min'/>
+      <query system='Dodixie' stat='sell/min'/>
+    </min>
+  </market>
+  
+  <apikeys>
+    <!-- This segment contains EVE API keys. -->
+    
+    <characters>
+      <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
+	   though I may not have any suitable cans at the moment. -->      
+      <character note='EvilMarvin (Public LBP Key)' enabled='true'>
+	<keyID>2747696</keyID>
+	<vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
+	<name>EvilMarvin</name>
+      </character>
+      
+    </characters>
+    
+    <corporations>
+      <!-- This key is no longer valid, but it should serve well enough to illustrate
+	   the entry. -->
+      <corporation note='PAC-C (Test Key)' enabled='false'>
+	<keyID>2755146</keyID>
+	<vCode>uTsyGQ4bzivLqyJGt24GRV0znqYiF6kzUkl52eiCFt84ETxgHhq3iFUZczEbFUln</vCode>
+      </corporation>
+      
+    </corporations>
+  </apikeys>
+
+  <outputs>
+    <!-- I've added an output section as I've implemented another output module. -->
+    <output enabled='true' module='html'> 
+      <args outputprefix='' uniquefiles='true'/>
+    </output>
+
+  </outputs>
+</config>
