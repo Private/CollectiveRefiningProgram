@@ -3,6 +3,7 @@ Kristoffer Langeland Knudsen
 rainbowponyprincess@gmail.com
 """
 
+import os
 import bz2
 import httplib
 import sqlite3 as sql
@@ -11,6 +12,10 @@ global db
 
 
 def initialize(filename):
+    """
+    Initialize the sqlite3 database. This provides access to the EVE Online database 
+    dump, containing information about item names, reprocessing yields, and so on. 
+    """
 
     global db
 
@@ -84,6 +89,5 @@ def trimDatabase(filename):
         else:
             print("\tKeeping table: " + name)
 
-    # TODO: This is broken, fix.
     db.execute("VACUUM")
     db.close()

@@ -13,6 +13,13 @@ import os.path
 import sqlite3 as sql
 import xml.etree.ElementTree as ElementTree
 
+
+import key
+import cache
+import database
+
+
+
 def isEnabled(elm):    
     return elm.get('enabled') in ['true', 'True', '1', 'yes', 'Yes', None]
 
@@ -95,43 +102,16 @@ def getPatterns():
     return patterns
 
 
-
-def processCharacter(keyID, vCode, charID):
-        
-    info = {"keyID" : keyID,
-            "vCode" : vCode,
-            "characterID" : charID}
-    
-    cans = cansFromAPI(info, "char")
-
-    print("Found " + str(len(cans)) + " containers of interest.")
-    if not cans: return    
-
-    for can in cans:        
-        can.valuate()
-        
-    return cans
-
-
-def processCorp(keyID, vCode):
-
-    info = {"keyID" : keyID,
-            "vCode" : vCode}
-
-    cans = cansFromAPI(info, "corp")
-
-    print("Found " + str(len(cans)) + " containers of interest.")
-    if not cans: return    
-    
-    for can in cans:        
-        can.valuate()
-
-    return cans
-
-
 def main(configfile):
 
+    versionfile = open('version', 'r')
+    version = versionfile.read()
+
     print("")
+    print("Collective Refining Program")
+    print("Version: " + version)
+    print("")
+
     print('Using config file: ' + configfile)
 
     configtree = ElementTree.parse(file(configfile))
@@ -141,65 +121,35 @@ def main(configfile):
 
     print("   Database file:\t" + db_file)
     print("   Cahce file:\t\t" + cache_file)
+    print("")
 
-    
+    database.initialize(db_file)
+    cache.initialize(cache_file)
 
+    ## All right - initialize the keys. 
 
-    cans = []
+    keys = []
 
-    for c in configtree.iter('character'):        
+    for elm in configtree.iter('apikey'):
 
-        if not isEnabled(c): continue
-
-        print("")
-        print("Processing character: " + c.get('note'))
-
-        if c.findtext('charID'):
-            processCharacter(c.findtext('keyID'), 
-                             c.findtext('vCode'), 
-                             c.findtext('charID'))
-            continue
-
-        if c.findtext('name'):
-            keyID = c.findtext('keyID')
-            vCode = c.findtext('vCode')
-            name = c.findtext('name')
-
-            # API lookup for the char id, process as above. 
-            
-            info = {'keyID' : keyID,
-                    'vCode' : vCode}
-
-            conn = httplib.HTTPSConnection("api.eveonline.com")
-            conn.request("GET", "/account/Characters.xml.aspx?" + urllib.urlencode(info))
-            response = conn.getresponse()
-
-            tree = ElementTree.parse(response)
-
-            for row in tree.iter('row'):
-                if name == row.get('name'):
-                    charactercans = processCharacter(keyID, vCode, row.get('characterID'))
-                    cans += charactercans if charactercans else []
-
-    for c in configtree.iter('corporation'):
-
-        if not isEnabled(c): continue
-
-        print("")
-        print("Processing corporation: " + c.get('note'))
+        if not isEnabled(elm): continue
         
-        corpcans = processCorp(c.findtext('keyID'), c.findtext('vCode'))
-        cans += corpcans if corpcans else []
+        keys += [key.fromXML(elm)]
 
     print("")
-    print("Generating output...")        
+    print("Requesting Assetlists...")
+
+    containers = [cache.getContainers(k) for k in keys]
+
+    print("")
+    print("Generating Output...")        
 
     for o in configtree.iter('output'):
 
         if not isEnabled(o): continue
 
         module = __import__(o.get('module'))
-        module.output(cans, o.find("args").attrib)
+        module.output(containers, o.find("args").attrib)
 
 
 if __name__ == "__main__":
