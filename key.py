@@ -32,7 +32,7 @@ def fromXML(elm):
     key = apiinfo.find(".//key")
     t = key.get('type')
 
-    print("   Key Type: " + t)
+    print("   Type: \t\t" + t)
     
     handlers = {'Character' : Character,
                 'Account' : Character,
@@ -59,7 +59,7 @@ class Character:
         
         if len(charIDs) == 1:
             
-            print("   Found character: " + charNames[0])
+            print("   Found character: \t" + charNames[0])
             self.charID = charIDs[0]
 
         elif not requestedName:

@@ -118,13 +118,15 @@ def main(configfile):
 
     db_file = configtree.findtext("./database/filename")
     cache_file = configtree.findtext("./cache/filename")
-
+    cache_directory = configtree.findtext("./cache/directory")
+    
     print("   Database file:\t" + db_file)
-    print("   Cahce file:\t\t" + cache_file)
+    print("   Cache directory:\t" + cache_directory)
+    print("   Cache file:\t\t" + cache_file)
     print("")
 
     database.initialize(db_file)
-    cache.initialize(cache_file)
+    cache.initialize(cache_directory, cache_file)
 
     ## All right - initialize the keys. 
 
@@ -137,7 +139,7 @@ def main(configfile):
         keys += [key.fromXML(elm)]
 
     print("")
-    print("Requesting Assetlists...")
+    print("Requesting AssetLists...")
 
     containers = [cache.getContainers(k) for k in keys]
 
