@@ -6,10 +6,10 @@ class Container:
     an EVE item type, quantity, name and type information, etc. 
     """
 
-
-    def __init__(self, itemID, locationID, name, 
+    def __init__(self, itemID, locationID, name,                  
                  currentTime = "Unknown", 
                  cachedUntil = "Unknown"):
+
  
         self.itemID = itemID
         self.locationID = locationID
