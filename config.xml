@@ -9,8 +9,9 @@
   </database>
   
   <cache>
-    <!-- I'm adding a cache here, I should have done do long ago. Good news! -->
-    <filename>cache.sqlite</filename>
+    <!-- I'm adding a cache here, I should have done do long ago. -->
+    <directory>cache</directory>
+    <filename>cache/cache.sqlite</filename>
   </cache>
 
   <namingpatterns>
@@ -21,64 +22,46 @@
     <!-- This reads as "Any character, any number of times, then "CRP", then any 
 	 character, any number of times". In other words, any string with "CRP" in 
 	 it. -->
-    <pattern enabled='true'>(?:.*)(CRP)(?:.*)</pattern>
+    <pattern>(?:.*)(CRP)(?:.*)</pattern>
  
-    <pattern enabled='true'>Sell</pattern>
-    <pattern enabled='true'>Refine</pattern>
-    <pattern enabled='true'>Unsorted</pattern>
+    <pattern>Sell</pattern>
+    <pattern>Refine</pattern>
+    <pattern>Unsorted</pattern>
             
   </namingpatterns>
   
   <market>
     <!-- The market segment allows you to control how prices are estimated. -->
 
-    <!-- This is currently rather rudimentary. Currently operations "min", "max"
-	 and "avg" (average) are supported. Beware, every 'query' node leads to 
-	 a price lookup at eve-central. These are performed in serial, so while
-	 you are unlikely to have your IP banned for spamming, complex calculations
-	 will take a long time. The majority of the execution time is spent waiting
-	 for eve-central replies, even with a single query. -->
+    <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
+	 (average) are supported. Leaf nodes should be query for obvious reasons -->
+    <value>
+      <query system='Jita' stat='all.median'/>
+    </value>
 
-    <!-- Only the first expression is used. -->
-    <avg>
-      <query system='Jita' stat='sell/min'/>
-      <query system='Jita' stat='buy/max'/>
-    </avg>
-  
-    <!-- Read this as "Find the lowest sell order in each trade hub. Value is the 
-	 minimum of these". I left this in here as an example, only the first 
-	 market expression is evaluated. -->
-    <min>
-      <query system='Jita' stat='sell/min'/>
-      <query system='Amarr' stat='sell/min'/>
-      <query system='Rens' stat='sell/min'/>
-      <query system='Dodixie' stat='sell/min'/>
-    </min>
+    <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
+	 human time-->
+    <cachetime>3600</cachetime> 
   </market>
   
   <apikeys>
     <!-- This segment contains EVE API keys. -->
     
-    <characters>
-      <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
-	   though I may not have any suitable cans at the moment. -->      
-      <character note='EvilMarvin (Public CRP Key)' enabled='true'>
-	<keyID>2747696</keyID>
-	<vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
-	<name>EvilMarvin</name>
-      </character>
-      
-    </characters>
+    <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
+	 though I may not have any suitable cans at the moment. -->      
+    <apikey note='EvilMarvin (Public CRP Key)' enabled='true'>
+      <keyID>2747696</keyID>
+      <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
+    </apikey>
     
-    <corporations>
-      <!-- This key is no longer valid, but it should serve well enough to illustrate
-	   the entry. -->
-      <corporation note='PAC-C (Test Key)' enabled='false'>
-	<keyID>2755146</keyID>
-	<vCode>uTsyGQ4bzivLqyJGt24GRV0znqYiF6kzUkl52eiCFt84ETxgHhq3iFUZczEbFUln</vCode>
-      </corporation>
+    
+    <!-- This key is no longer valid, but it should serve well enough to illustrate
+	 the entry. -->
+    <apikey note='PAC-C (Test Key)' enabled='false'>
+      <keyID>2755146</keyID>
+      <vCode>uTsyGQ4bzivLqyJGt24GRV0znqYiF6kzUkl52eiCFt84ETxgHhq3iFUZczEbFUln</vCode>
+    </apikey>
       
-    </corporations>
   </apikeys>
 
   <outputs>
@@ -86,6 +69,5 @@
     <output enabled='true' module='html'> 
       <args outputprefix='' uniquefiles='true'/>
     </output>
-
   </outputs>
 </config>

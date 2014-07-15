@@ -26,6 +26,11 @@ def initialize(filename):
     db = sql.connect(filename)
 
 
+def cursor():
+
+    global db
+    return db.cursor()
+
 
 def updateDatabase(filename):
     """

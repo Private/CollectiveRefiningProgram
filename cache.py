@@ -4,24 +4,32 @@ rainbowponyprincess@gmail.com
 """
 
 import os
+import re
 import time
 import urllib
 import httplib
 import sqlite3 as sql
 import xml.etree.ElementTree as ElementTree
 
+import database as db
+import container
+
 global cache
 global cachedir
 
+global cfgtree
 
-def initialize(directory, filename):
+
+def initialize(configtree, directory, filename):
     """
 
     """
 
     global cache
     global cachedir
-    
+    global cfgtree
+
+    cfgtree = configtree     
     cachedir = directory
 
     if not os.path.exists(directory):
@@ -34,6 +42,32 @@ def initialize(directory, filename):
 
     cache = sql.connect(filename)
 
+
+## --------------------------------------------------------------- ##
+
+
+def getOutposts():
+
+    global cachedir
+
+    cache = getCache("Outposts")
+
+    if cache:
+        # All right! We already got a list of outposts, we're golden.
+        return ElementTree.parse(cachedir + '/' + cache)    
+    else:
+        # No outposts are cached, pull a new list from the servers. 
+
+        class VoidKey:
+            def __init__(self): self.keyID = 'void'
+
+            def getInfo(self): return {}
+            def getPrefix(self): return "eve"
+        
+        (cachedUntil, filename) = fetchPage(VoidKey(), "ConquerableStationList.xml.aspx")
+        putCache("Outposts", cachedUntil, filename)
+        
+        return ElementTree.parse(cachedir + '/' + filename)
 
 
 def getContainers(key):
@@ -76,6 +110,10 @@ def getContainers(key):
 
         return buildContainers(assetFile, locationsFile)
 
+
+## --------------------------------------------------------------- ##
+
+
 def containerIDs(assetlist):
 
     tree = ElementTree.parse(cachedir + '/' + assetlist)
@@ -94,42 +132,26 @@ def containerIDs(assetlist):
 
 def buildContainers(assetlist, locations):
 
+    global cfgtree
     global cachedir
 
     assets = ElementTree.parse(cachedir + '/' + assetlist)
     locations = ElementTree.parse(cachedir + '/' + locations)
-
-    
-    currentTime = assets.findtext('currentTime')
-    cachedUntil = assets.findtext('cachedUntil')
-        
     
     # Grab the items marked for the buyback program. 
-    patterns = getPatterns()
-    cans = [Can(item.get('itemID'),
-                item.get('locationID'),
-                item.get('itemName'),
-                currentTime, cachedUntil) 
-            for item in locationtree.iter('row')
-            if any(map(lambda p: p.match(item.get('itemName')),
-                       patterns))]
-    
-    def getContents(item):
-        return map(lambda i: {'typeID' : i.get('typeID'),
-                              'quantity' : int(i.get('quantity'))}, 
-                   (list(item.iter('row'))))
+    patterns = [re.compile(pattern.text) 
+                for pattern in cfgtree.iter('pattern')];        
             
-    for can in cans:
-        for item in itemtree.iter('row'):
-            if item.get('itemID') == can.itemID:
-                can.locationID = item.get('locationID')
-                can.contents = getContents(item)
-                
-    return cans
+    containers = [container.Container(item.get('itemID'),
+                                      item.get('itemName')) 
+                  for item in locations.iter('row')
+                  if any(map(lambda p: p.match(item.get('itemName')),
+                             patterns))]
+    
+    for c in containers:
+        c.addContents(assets)
 
-
-    return []
-
+    return containers
 
 
     
@@ -192,7 +214,8 @@ def fetchPage(key, page, additional_info = {}):
     body = response.read()
 
     filename = key.keyID + '.' + page
-        
+
+    # Dump the page to a file - brutal but effective, and it makes my job easier.
     f = open(cachedir + '/' + filename, 'w')
     f.write(body)
     f.close()
@@ -228,6 +251,11 @@ def initCacheDatabase(filename):
     CREATE TABLE "marketCache" (
        "typeID" integer NOT NULL,
        "cachedUntil" double NOT NULL,
+       "systemID" integer NOT NULL,
+       "buy.max" double NOT NULL,
+       "sell.min" double NOT NULL,
+       "all.avg" double NOT NULL,
+       "all.median" double NOT NULL,
        PRIMARY KEY ("typeID")
     )
     """
@@ -235,8 +263,81 @@ def initCacheDatabase(filename):
     cursor = db.cursor()
     cursor.execute(apiQuery)
     cursor.execute(marketQuery)
+
+    db.commit()
         
 ## --------------------------------------------------------------- ##    
+## --------------------------------------------------------------- ##
+## --------------------------------------------------------------- ##
+
+def getValues(typeIDs):
+    
+    global cache
+    global cfgtree
+    
+    cursor = cache.cursor()
+
+    # Look at the market expression, find determine which systems
+    # we need data for. 
+    systems = getMarketSystems(cfgtree.find(".//market/value"))
+
+    refresh = {}
+    for system in systems: refresh[system] = []
+
+    # Pick out the itemIDs we need to fetch from eve-central
+    for typeID in typeIDs:
+        for system in systems:
+            cursor.execute("SELECT typeID, cachedUntil " +
+                           "FROM marketCache " +
+                           "WHERE typeID = ? AND systemID = ?", 
+                           [typeID, system])
+        
+            result = cursor.fetchone()
+            if not result: 
+                refresh[system] += [typeID]
+                continue
+                
+            (typeID, cachedUntil) = result
+                
+            if time.time() > cachedUntil:
+                refresh[system] += [typeID]
+                continue
+
+    # Query EVE-Central.com for the missing itemIDs.     
+    for systemID in systems:
+
+        marketstats = marketStat(refresh[systemID], systemID)
+        
+        
+
+
+        pass
+        
+    
+    return {}
+
+
+def getMarketSystems(elm):
+
+    cursor = db.cursor()
+    
+    systemIDs = set([])
+
+    for e in elm.findall('*[@system]'):
+        print(e.get('system'))
+
+        cursor.execute("SELECT solarSystemID " +
+                       "FROM mapSolarSystems " +
+                       "WHERE solarSystemName = ?",
+                       [e.get('system')])
+
+        (systemID, ) = cursor.fetchone()
+
+        systemIDs.add(systemID)
+    
+    return systemIDs
+
+
 
 def marketStat(typeIDs, systemID, stat):
     
@@ -249,22 +350,70 @@ def marketStat(typeIDs, systemID, stat):
     conn.request("POST", "/api/marketstat", 
                  urllib.urlencode(params) + '&' + typestr)
     response = conn.getresponse()    
+        
+    return ElementTree.parse(response)
+    
 
-    if response.status != 200:
-        print("EVE-Central Request: " + 
-              str(response.status) + " " +
-              str(response.reason))
+def getPrices(typeIDs):
+
+    global cfgtree
+
+    root = list(cfgtree.find('market'))[0]
+
+    def __apply(f):
         
-    pricetree = ElementTree.parse(response)
-    
-    # Build a map containing the prices. 
-    prices = {}
-    
-    def getMarketStat(elm, stat):        
-        price = float(elm.find(stat).text) 
-        return price if price != float(0) else None
-    
-    for elm in pricetree.iter('type'):
-        prices[elm.get('id')] = getMarketStat(elm, stat) 
+        def __(x, y):                        
+
+            acc = {}
+            for typeID in set(x.keys() + y.keys()):
+                if typeID not in x or not x[typeID]:
+                    acc[typeID] = y[typeID]
+                    continue
+                if typeID not in y or not y[typeID]:
+                    acc[typeID] = x[typeID]
+                    continue
+
+                acc[typeID] = f(x[typeID], y[typeID])
+
+            return acc
+
+        return __
+
+    def __min(elm):
+        children = map(internal, list(elm))
+        return reduce(__apply(min), children, {})
+
+    def __max(elm):
+        children = map(internal, list(elm))
+        return reduce(__apply(max), children, {})
+
+    def __avg(elm):
+        children = map(internal, list(elm))
+        return reduce(__apply(lambda x, y: (x + y) / 2), 
+                      children, {})
         
-    return prices
+    def __query(elm):
+
+        cursor = db.cursor()
+        cursor.execute("SELECT solarSystemID " +
+                       "FROM mapSolarSystems " +
+                       "WHERE solarSystemName=?",
+                       [elm.get('system')])
+        
+        systemID = cursor.fetchone()[0]
+
+        print("\tWaiting for market data: {}".format(elm.get('system')))
+
+        return marketStat(typeIDs, systemID, elm.get('stat'))
+
+
+    functions = {'min' : __min,
+                 'max' : __max,
+                 'avg' : __avg,
+                 'query' : __query}
+
+    def internal(elm):
+        return functions[elm.tag](elm)
+
+    return internal(root)
+

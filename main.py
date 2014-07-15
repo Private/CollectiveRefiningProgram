@@ -19,87 +19,8 @@ import cache
 import database
 
 
-
 def isEnabled(elm):    
     return elm.get('enabled') in ['true', 'True', '1', 'yes', 'Yes', None]
-
-    
-def getPrices(typeIDs):
-
-    global configfile
-
-    configtree = ElementTree.parse(configfile)
-    root = list(configtree.find('market'))[0]
-
-    def __apply(f):
-        
-        def __(x, y):                        
-
-            acc = {}
-            for typeID in set(x.keys() + y.keys()):
-                if typeID not in x or not x[typeID]:
-                    acc[typeID] = y[typeID]
-                    continue
-                if typeID not in y or not y[typeID]:
-                    acc[typeID] = x[typeID]
-                    continue
-
-                acc[typeID] = f(x[typeID], y[typeID])
-
-            return acc
-
-        return __
-
-    def __min(elm):
-        children = map(internal, list(elm))
-        return reduce(__apply(min), children, {})
-
-    def __max(elm):
-        children = map(internal, list(elm))
-        return reduce(__apply(max), children, {})
-
-    def __avg(elm):
-        children = map(internal, list(elm))
-        return reduce(__apply(lambda x, y: (x + y) / 2), 
-                      children, {})
-        
-    def __query(elm):
-
-        cursor = db.cursor()
-        cursor.execute("SELECT solarSystemID " +
-                       "FROM mapSolarSystems " +
-                       "WHERE solarSystemName=?",
-                       [elm.get('system')])
-        
-        systemID = cursor.fetchone()[0]
-
-        print("\tWaiting for market data: {}".format(elm.get('system')))
-
-        return marketStat(typeIDs, systemID, elm.get('stat'))
-
-
-    functions = {'min' : __min,
-                 'max' : __max,
-                 'avg' : __avg,
-                 'query' : __query}
-
-    def internal(elm):
-        return functions[elm.tag](elm)
-
-    return internal(root)
-
-
-def getPatterns():
-
-    global configfile
-
-    configtree = ElementTree.parse(configfile)
-    
-    patterns = [re.compile(pattern.text) 
-                for pattern in configtree.iter('pattern')
-                if isEnabled(pattern)];
-        
-    return patterns
 
 
 def main(configfile):
@@ -114,6 +35,7 @@ def main(configfile):
 
     print('Using config file: ' + configfile)
 
+    global configtree
     configtree = ElementTree.parse(file(configfile))
 
     db_file = configtree.findtext("./database/filename")
@@ -126,7 +48,7 @@ def main(configfile):
     print("")
 
     database.initialize(db_file)
-    cache.initialize(cache_directory, cache_file)
+    cache.initialize(configtree, cache_directory, cache_file)
 
     ## All right - initialize the keys. 
 
@@ -141,7 +63,11 @@ def main(configfile):
     print("")
     print("Requesting AssetLists...")
 
-    containers = [cache.getContainers(k) for k in keys]
+    
+    containers = []
+
+    for k in keys:
+        containers += cache.getContainers(k)
 
     print("")
     print("Generating Output...")        

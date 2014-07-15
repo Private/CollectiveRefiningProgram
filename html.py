@@ -38,10 +38,6 @@ __document = """
 <body>
 <h1>{name}</h1>
 <p>{location}</p>
-<div>
-Current Time: {time} <br>
-Cached Until: {cache} <br>
-</div>
 {summary}
 <div>
 <h3>Item Breakdown</h3>
@@ -185,9 +181,7 @@ def output(cans, args):
         can.contents = sorted(can.contents, key=sellProfit)
 
         out.write(__document.format(name = can.name,
-                                    location = can.location,
-                                    time = can.currentTime,
-                                    cache = can.cachedUntil,
+                                    location = can.locationName,
                                     summary = buildSummary(can),
                                     headers = buildHeaders(can),
                                     rows = buildRows(can)))        
