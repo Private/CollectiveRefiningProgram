@@ -103,7 +103,7 @@ def getPatterns():
 
 
 def main(configfile):
-
+    
     versionfile = open('version', 'r')
     version = versionfile.read()
 

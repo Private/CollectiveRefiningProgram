@@ -42,32 +42,91 @@ def getContainers(key):
 
     print("   Processing key: " + key.note)
 
-    cacheName = key.keyID + "/AssetList"
+    assetCache = getCache(key.keyID + "/AssetList")
+    locationsCache = getCache(key.keyID + "/Locations")
 
-    cache = getCache(cacheName)
-
-    if cache:
+    if assetCache:
         # Good, a cached version was found. Use that shit!
 
-        print("      Cached AssetList found.")
+        print("      AssetList: \tCACHED")
         
-        return buildContainers(cache)
+        return buildContainers(assetCache, locationsCache)
     else:
         # No cached version was found, dial the API servers! 
 
-        print("      No cached AssetList.")
+        print("      AssetList: \tNOT CACHED")
 
-        (timeout, filename) = requestAPI(key, "AssetList.xml.aspx")
-        putCache(cacheName, timeout, filename)
+        # Turns out the Locations are on a different cache timer than the 
+        # AssetLists. Effectively, you can have an old AssetList, with a 
+        # new Location list, missing names and causing crashes. 
+        
+        # I'm caching the Locations with the AssetLists to avoid this - 
+        # after all, a list of Locations is useless if it doesn't match 
+        # the AssetList, no matter how old the AssetList is.
 
-        return buildContainers(filename)
+        # The fix is simple: I cache the Locations on the same timer as 
+        # the assetlist.
+
+        (cachedUntil, assetFile) = fetchPage(key, 'AssetList.xml.aspx')
+        (_, locationsFile) = fetchPage(key, 'Locations.xml.aspx', 
+                                       {'IDs' : ','.join(containerIDs(assetFile))})
+        
+        putCache(key.keyID + "/AssetList", cachedUntil, assetFile)
+        putCache(key.keyID + "/Locations", cachedUntil, locationsFile)
+
+        return buildContainers(assetFile, locationsFile)
+
+def containerIDs(assetlist):
+
+    tree = ElementTree.parse(cachedir + '/' + assetlist)
+
+    # Grab the non-empty items. 
+    containers = [{'itemID': item.get('itemID'), 
+                   'typeID': item.get('typeID')} 
+                  for item in tree.iter('row')
+                  if list(item)]
+    
+    # Turns out the AssetList will include corp offices as items. If you don't own the 
+    # station, the Locations call will fail with error 135. This is a rather crude hack 
+    # to get around that - ignore all offices.
+    return [c['itemID'] for c in containers if c['typeID'] != '27']
 
 
-def buildContainers(xmlfile):
+def buildContainers(assetlist, locations):
 
     global cachedir
 
-    root = ElementTree.parse(cachedir + '/' + xmlfile)
+    assets = ElementTree.parse(cachedir + '/' + assetlist)
+    locations = ElementTree.parse(cachedir + '/' + locations)
+
+    
+    currentTime = assets.findtext('currentTime')
+    cachedUntil = assets.findtext('cachedUntil')
+        
+    
+    # Grab the items marked for the buyback program. 
+    patterns = getPatterns()
+    cans = [Can(item.get('itemID'),
+                item.get('locationID'),
+                item.get('itemName'),
+                currentTime, cachedUntil) 
+            for item in locationtree.iter('row')
+            if any(map(lambda p: p.match(item.get('itemName')),
+                       patterns))]
+    
+    def getContents(item):
+        return map(lambda i: {'typeID' : i.get('typeID'),
+                              'quantity' : int(i.get('quantity'))}, 
+                   (list(item.iter('row'))))
+            
+    for can in cans:
+        for item in itemtree.iter('row'):
+            if item.get('itemID') == can.itemID:
+                can.locationID = item.get('locationID')
+                can.contents = getContents(item)
+                
+    return cans
+
 
     return []
 
@@ -75,7 +134,6 @@ def buildContainers(xmlfile):
 
     
 ## --------------------------------------------------------------- ##
-# A few generic api-cache functions. 
 
 def getCache(cacheName):
     """
@@ -104,16 +162,28 @@ def putCache(cacheName, cachedUntil, filename):
     global cache
 
     cursor = cache.cursor()
-    cursor.execute("INSERT INTO apiCache (cacheName, cachedUntil, file) VALUES (?, ?, ?)",
-                   [cacheName, cachedUntil, filename])    
+    cursor.execute("SELECT * FROM apiCache WHERE cacheName = ?",
+                   [cacheName])
+
+    if cursor.fetchone():
+        # Update the row if a previous version is cached.
+        cursor.execute("UPDATE apiCache SET cachedUntil = ?, file = ? WHERE cacheName = ?",
+                       [cachedUntil, filename, cacheName])
+    else:
+        # Insert a row if no previous verion is cached.
+        cursor.execute("INSERT INTO apiCache (cacheName, cachedUntil, file) VALUES (?, ?, ?)",
+                       [cacheName, cachedUntil, filename])    
+
     cache.commit()
 
+## --------------------------------------------------------------- ##
 
-
-def requestAPI(key, page):
+def fetchPage(key, page, additional_info = {}):
 
     prefix = key.getPrefix()
-    info = key.getInfo()
+    info = {}
+    info.update(key.getInfo())
+    info.update(additional_info)
     
     conn = httplib.HTTPSConnection("api.eveonline.com")
     conn.request("GET", "/" + prefix + "/" + page + "?" + urllib.urlencode(info))
@@ -139,9 +209,7 @@ def requestAPI(key, page):
 
     return (time.time() + time_left, filename)
     
-
 ## --------------------------------------------------------------- ##
-
 
 def initCacheDatabase(filename):
 
@@ -167,65 +235,8 @@ def initCacheDatabase(filename):
     cursor = db.cursor()
     cursor.execute(apiQuery)
     cursor.execute(marketQuery)
-
         
-def cansFromAPI(info, prefix):
-        
-    # Parse the XML
-    itemtree = ElementTree.parse(response)
-
-    # Grab the non-empty items. 
-    containers = [{'itemID': item.get('itemID'), 
-                   'typeID': item.get('typeID')} 
-                  for item in itemtree.iter('row')
-                  if list(item)]
-    
-    currentTime = itemtree.findtext('currentTime')
-    cachedUntil = itemtree.findtext('cachedUntil')
-    
-    # Turns out the AssetList will include corp offices as items. If you don't own the 
-    # station, the Locations call will fail with error 135. This is a rather crude hack 
-    # to get around that - ignore all offices.
-    containers = [c for c in containers if c['typeID'] != '27']
-    
-    info['IDs'] = ','.join(map(lambda c: c['itemID'], containers))
-    
-    # Fetch the container names, we need those. 
-    conn.request("GET", "/" + prefix + "/Locations.xml.aspx?" + urllib.urlencode(info))
-    response = conn.getresponse()
-
-    print("API Request (Locations): " + 
-          str(response.status) + " " +
-          str(response.reason))
-
-    locationtree = ElementTree.parse(response)
-    
-    # Grab the items marked for the buyback program. 
-    patterns = getPatterns()
-    cans = [Can(item.get('itemID'),
-                item.get('locationID'),
-                item.get('itemName'),
-                currentTime, cachedUntil) 
-            for item in locationtree.iter('row')
-            if any(map(lambda p: p.match(item.get('itemName')),
-                       patterns))]
-    
-    def getContents(item):
-        return map(lambda i: {'typeID' : i.get('typeID'),
-                              'quantity' : int(i.get('quantity'))}, 
-                   (list(item.iter('row'))))
-            
-    for can in cans:
-        for item in itemtree.iter('row'):
-            if item.get('itemID') == can.itemID:
-                can.locationID = item.get('locationID')
-                can.contents = getContents(item)
-                
-    return cans
-
-
-## --------------------------------------------------------------- ##
-    
+## --------------------------------------------------------------- ##    
 
 def marketStat(typeIDs, systemID, stat):
     
