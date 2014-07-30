@@ -27,7 +27,7 @@
     <pattern>Sell</pattern>
     <pattern>Refine</pattern>
     <pattern>Unsorted</pattern>
-            
+
   </namingpatterns>
   
   <market>
@@ -36,7 +36,7 @@
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
 	 (average) are supported. Leaf nodes should be query for obvious reasons -->
     <value>
-      <query system='Jita' stat='all.median'/>
+      <query system='Jita' stat='median'/>
     </value>
 
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 

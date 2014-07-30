@@ -252,10 +252,9 @@ def initCacheDatabase(filename):
        "typeID" integer NOT NULL,
        "cachedUntil" double NOT NULL,
        "systemID" integer NOT NULL,
-       "buy.max" double NOT NULL,
-       "sell.min" double NOT NULL,
-       "all.avg" double NOT NULL,
-       "all.median" double NOT NULL,
+       "buy" double NOT NULL,
+       "sell" double NOT NULL,
+       "median" double NOT NULL,
        PRIMARY KEY ("typeID")
     )
     """
@@ -276,45 +275,89 @@ def getValues(typeIDs):
     global cfgtree
     
     cursor = cache.cursor()
+    marketCacheTime = cfgtree.findtext(".//market/cachetime")
+
 
     # Look at the market expression, find determine which systems
     # we need data for. 
     systems = getMarketSystems(cfgtree.find(".//market/value"))
 
     refresh = {}
-    for system in systems: refresh[system] = []
+    for (systemName, systemID) in systems: refresh[systemID] = []
 
     # Pick out the itemIDs we need to fetch from eve-central
     for typeID in typeIDs:
-        for system in systems:
+        for (systemName, systemID) in systems:
+            
             cursor.execute("SELECT typeID, cachedUntil " +
                            "FROM marketCache " +
                            "WHERE typeID = ? AND systemID = ?", 
-                           [typeID, system])
+                           [typeID, systemID])
         
             result = cursor.fetchone()
             if not result: 
-                refresh[system] += [typeID]
+                refresh[systemID] += [typeID]
                 continue
                 
             (typeID, cachedUntil) = result
                 
             if time.time() > cachedUntil:
-                refresh[system] += [typeID]
+                refresh[systemID] += [typeID]
                 continue
 
+    print("")
+    print("         Market Information:")
+
+    updateHappened = False
+        
+
     # Query EVE-Central.com for the missing itemIDs.     
-    for systemID in systems:
+    for (systemName, systemID) in systems:
 
-        marketstats = marketStat(refresh[systemID], systemID)
+        if not refresh[systemID]: continue
+        print("            Refreshing: " + systemName + " - " + str(len(refresh[systemID])) + " types")
         
-        
+        responsetree = marketStat(refresh[systemID], systemID)
 
-
-        pass
+        # All right, we have the new market prices. Put them in the cache. 
         
-    
-    return {}
+        for elm in responsetree.findall(".//type"):
+
+            # Build a dict, keep the info handy.
+            info = {'cacheTime' : time.time() + float(marketCacheTime),
+                    'typeID' : elm.get('id'),
+                    'systemID' : systemID,
+                    'buy' : elm.findtext('buy/max'),
+                    'sell' : elm.findtext('sell/min'),
+                    'median' : elm.findtext('all/median')}
+ 
+            # We're updating the cache database. Good. I love SQL - it's so nice and wonderful.
+            # I'm trying to keep the SQL simple, so I'm using multiple queries. Sue me. 
+
+            cursor.execute("SELECT typeID, systemID FROM marketCache WHERE typeID = :typeID AND systemID = :systemID",
+                           info)
+            
+            if cursor.fetchone():
+                # Update the row if a previous version is cached.
+                cursor.execute("UPDATE marketCache " +
+                               "SET (cachedUntil = :cacheTime, buy = :buy, sell = :sell, median = :median) " +
+                               "WHERE typeID = :typeID AND systemID = :systemID ",
+                               info)
+
+            else:
+                # Insert a row if no previous verion is cached.
+                cursor.execute("INSERT INTO marketCache VALUES (:typeID, :cacheTime, :systemID, :buy, :sell, :median)", info)
+
+        
+        updateHappened = True
+
+    if updateHappened:
+        cache.commit()
+    else:
+        print("            No updates needed.")    
+
+    # Cache is up to date, evaluate the pricing expressions and return the results. 
+    return evalValuation(typeIDs)
 
 
 def getMarketSystems(elm):
@@ -324,7 +367,6 @@ def getMarketSystems(elm):
     systemIDs = set([])
 
     for e in elm.findall('*[@system]'):
-        print(e.get('system'))
 
         cursor.execute("SELECT solarSystemID " +
                        "FROM mapSolarSystems " +
@@ -333,13 +375,13 @@ def getMarketSystems(elm):
 
         (systemID, ) = cursor.fetchone()
 
-        systemIDs.add(systemID)
+        systemIDs.add((e.get('system'), systemID))
     
     return systemIDs
 
 
 
-def marketStat(typeIDs, systemID, stat):
+def marketStat(typeIDs, systemID):
     
     params = {"hours" : 72,
               "usesystem" : systemID}
@@ -354,11 +396,12 @@ def marketStat(typeIDs, systemID, stat):
     return ElementTree.parse(response)
     
 
-def getPrices(typeIDs):
+def evalValuation(typeIDs):
 
+    global cache
     global cfgtree
 
-    root = list(cfgtree.find('market'))[0]
+    root = cfgtree.find('.//market/value/*')
 
     def __apply(f):
         
@@ -394,6 +437,8 @@ def getPrices(typeIDs):
         
     def __query(elm):
 
+        results = {}
+
         cursor = db.cursor()
         cursor.execute("SELECT solarSystemID " +
                        "FROM mapSolarSystems " +
@@ -402,9 +447,17 @@ def getPrices(typeIDs):
         
         systemID = cursor.fetchone()[0]
 
-        print("\tWaiting for market data: {}".format(elm.get('system')))
+        cursor = cache.cursor()
+        for typeID in typeIDs:
+            # Deathly super-super-hack! Don't do this, EVER!
+            cursor.execute("SELECT typeID, " + elm.get('stat') + " FROM marketCache WHERE typeID = ?",
+                           [typeID])
+        
 
-        return marketStat(typeIDs, systemID, elm.get('stat'))
+            (typeID, value) = cursor.fetchone()
+            results[typeID] = value
+            
+        return results
 
 
     functions = {'min' : __min,
