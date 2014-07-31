@@ -22,7 +22,7 @@ class Container:
         self.itemID = itemID
 
         self.contents = []
-
+        self.refining_yield = []
 
         self.locationID = None
         self.locationName = None
@@ -37,7 +37,7 @@ class Container:
 
         for row in item.iter('row'):            
             self.contents += [{'typeID' : row.get('typeID'),
-                               'quantity' : row.get('quantity')}]
+                               'quantity' : int(row.get('quantity'))}]
 
         print("")
         print("      " + self.name)
@@ -49,9 +49,11 @@ class Container:
 
         self.__itmNames()
         self.__itmYield()
-
         self.__itmValue()
+        
         self.__itmYieldValue()
+
+        self.__totalYield()
 
     ## --------------------------------------------------------------- ##
     
@@ -93,7 +95,6 @@ class Container:
                 
         print("WARNING: Found no location for " + self.name)
 
-
         
     def __itmNames(self):
         
@@ -120,22 +121,6 @@ class Container:
             itm['groupName'] = groupName
 
 
-    def __itmYield(self):
-
-        for itm in self.contents:
-            
-            cursor = db.cursor()
-            cursor.execute("SELECT materialTypeID, quantity " +
-                           "FROM invTypeMaterials " +
-                           "WHERE typeID = ?",
-                           [itm['typeID']])
-            
-            itm['yield'] = dict(map(lambda (id, n): (str(id), n), 
-                                    cursor.fetchall()))
-
-
-
-
     def __itmValue(self):
 
         typeIDs = map(lambda itm: itm['typeID'], self.contents)
@@ -145,66 +130,69 @@ class Container:
         for itm in self.contents:
             itm['value'] = prices[itm['typeID']]
 
-        
+
+    def __itmYield(self):
+
+        for itm in self.contents:
+
+            itm['yield'] = []
+            
+            cursor = db.cursor()
+            cursor.execute("SELECT materialTypeID, quantity " +
+                           "FROM invTypeMaterials " +
+                           "WHERE typeID = ?",
+                           [itm['typeID']])            
+
+            for (id, n) in cursor.fetchall():
+
+                cursor.execute("SELECT typeName FROM invTypes WHERE typeID = ?", [id])
+                (name, ) = cursor.fetchone()
+                  
+                itm['yield'] += [{'name' : name,
+                                  'typeID' : str(id),
+                                  'quantity' : n}]
+
+
     def __itmYieldValue(self):
 
-        # First, determine which minerals to price. 
-        typeIDs = reduce(lambda x, y: x.union(y),
-                         map(lambda itm: set(itm['yield'].keys()), 
-                             self.contents))
-        
-        self.yieldprices = prices = cache.getValues(typeIDs)        
-        
-        for itm in self.contents:            
-
-            itm['yieldvalue'] = float(0)
-
-            for typeID, n in itm['yield'].iteritems():
-                if prices[typeID]:
-                    itm['yieldvalue'] += n * prices[typeID]
-                
-            itm['yieldvalue'] /= itm['portionSize']
-
+        for itm in self.contents:
             
-    ## --------------------------------------------------------------- ##
+            typeIDs = map(lambda r: r['typeID'], itm['yield'])
+            
+            prices = cache.getValues(typeIDs)
+
+            itm['yieldvalue'] = sum(map(lambda r: r['quantity'] * prices[r['typeID']], itm['yield']))
 
 
-    def totalItems(self):
-        return sum(map(lambda itm: itm['quantity'], self.contents))
+    def __totalYield(self):
 
+        def __contains(ref_yield, typeID):
+            return any(map(lambda r: r['typeID'] == typeID, ref_yield))
 
-    def totalTypes(self):
-        return len(self.contents)
+        def __update(ref_yield, typeID, quantity):
+            for r in ref_yield:
+                if r['typeID'] == typeID:
+                    r['quantity'] += quantity
 
-
-    def totalYield(self):
-        
-        names = {}
-        total = {}
+        def __insert(ref_yield, typeID, name, quantity):
+            ref_yield += [{'name' : name,
+                           'typeID' : typeID,
+                           'quantity' : quantity}]
 
         for itm in self.contents:            
-            for typeID, n in itm['yield'].iteritems():
-                
-                if typeID not in total:
-                    total[typeID] = (n / itm['portionSize']) * itm['quantity']
-                    names[typeID] = getName(typeID)
+            for r in itm['yield']:                
+                if __contains(self.refining_yield, r['typeID']):
+                    __update(self.refining_yield, r['typeID'], r['quantity'])
                 else:
-                    total[typeID] += (n / itm['portionSize']) * itm['quantity']
+                    __insert(self.refining_yield, r['typeID'], r['name'], r['quantity'])
 
-        return total, names
+        # Some pricing for the refinement yields would be nice as well.
+        typeIDs = map(lambda r: r['typeID'], self.refining_yield)
 
+        prices = cache.getValues(typeIDs)
 
-    def totalSellValue(self):
-        return sum(map(lambda itm: itm['quantity'] * itm['value'] if itm['value'] else float(0), 
-                       self.contents))
+        for r in self.refining_yield:
+            r['value'] = prices[r['typeID']]
 
-
-    def totalYieldValue(self):
-        return sum(map(lambda itm: itm['quantity'] * itm['yieldvalue'], self.contents))
-
-
-    def totalMaximumValue(self):
-        return sum(map(lambda i: (i['quantity'] * 
-                                  max(i['yieldvalue'], 
-                                      i['value'])), 
-                       self.contents))
+        
+    ## --------------------------------------------------------------- ##

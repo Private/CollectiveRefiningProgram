@@ -1,6 +1,6 @@
 
 """
-  A Simple bit of output code, just dump some HTML.
+A Simple bit of output code, just dump some HTML.
 """
 
 def sellProfit(itm):
@@ -60,19 +60,29 @@ def th(s):
     return wrap(s, 'th')
 
 
+def totalSellValue(container):
+    return sum(map(lambda itm: itm['value'] if itm['value'] else 0.0, container.contents))
+
+
+def totalYieldValue(container):
+    return sum(map(lambda itm: itm['value'] if itm['value'] else 0.0, container.refining_yield))
+
+
 def buildSummary(can):
 
     def totalYieldTable():
-        total, names = can.totalYield()
+
 
         hrow = "";
         trow = "";
         prow = "";
 
-        for (typeID, n) in sorted(total.items(), key=(lambda (typeID, _): int(typeID))):
-            hrow += th(names[typeID])
-            trow += td("{:,}".format(n))
-            prow += td("{:,}".format(can.yieldprices[typeID]))
+        totalYield = sorted(can.refining_yield, key=(lambda itm: itm['typeID']))
+
+        for itm in totalYield:
+            hrow += th(itm['name'])
+            trow += td("{:,}".format(itm['quantity']))
+            prow += td("{:,}".format(itm['value']))
 
         return ("<table border=1>\n" +
                 "<tr><th></th>" + hrow + "</tr>\n" + 
@@ -83,14 +93,12 @@ def buildSummary(can):
     top = ("<p>" +
            "Total Sell Value: {:,} ISK <br>" +
            "Total Reprocess Value: {:,} ISK <br>" +
-           "Total Maximum Value: {:,} ISK <br>" +
-           "</p>\n").format(can.totalSellValue(),
-                            can.totalYieldValue(),
-                            can.totalMaximumValue())
+           "</p>\n").format(totalSellValue(can),
+                            totalYieldValue(can))
     
     payout = ("<p><b>" +
               "LBP Payout: {:,} ISK <br>" +
-              "</b></p>").format(int(0.90 * can.totalYieldValue()))
+              "</b></p>").format(int(0.90 * totalYieldValue(can)))
 
     mid = ("<div>" +
            "Total Reprocessing Yield: <br>\n" +
@@ -99,35 +107,6 @@ def buildSummary(can):
     
     return top + payout + mid           
 
-def buildOptimize(can):
-
-    header = ("<tr>" + 
-              th("Group") +
-              th("Item") +
-              th("Quantity") +
-              th("Unit Mineral Value") +
-              th("Unit Sell Value") +
-              th("Unit Profit") +
-              th("Total Profit") +
-              "</tr>")
-    
-    def buildRow(itm):
-        return ("<tr>" +
-                td(itm['groupName']) +
-                td(itm['name']) +
-                td(itm['quantity']) +
-                td("{:,}".format(itm['yieldvalue'])) +
-                td("{:,}".format(itm['value'])) +
-                td("{:,}".format(sellProfit(itm))) +
-                td("{:,}".format(itm['quantity'] * 
-                                 (itm['value'] - itm['yieldvalue']))) +
-                "</tr>")
-
-    rows = map(buildRow,
-               sorted(can.contents, 
-                      key=(lambda itm: itm['yieldvalue'] - itm['value']))[0:20])
-    
-    return header + ''.join(rows)
 
 def buildHeaders(can):
 
@@ -143,10 +122,11 @@ def buildHeaders(can):
 
     return "<tr>" + header + "</tr>"
 
+
 def buildRows(can):
 
     def buildRow(itm):
-        
+
         row = "<td>{group}</td><td>{name}</td><td>{quantity}</td>"
 
         row = row.format(group = itm['groupName'],
