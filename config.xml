@@ -23,6 +23,9 @@
 	 character, any number of times". In other words, any string with "CRP" in 
 	 it. -->
     <pattern>(?:.*)(CRP)(?:.*)</pattern>
+
+    <!-- For those of you who are old-school: -->
+    <pattern>(?:.*)(LBP)(?:,*)</pattern>
  
     <pattern>Sell</pattern>
     <pattern>Refine</pattern>
@@ -36,7 +39,10 @@
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
 	 (average) are supported. Leaf nodes should be query for obvious reasons -->
     <value>
-      <query system='Jita' stat='median'/>
+      <avg>
+	<query system = 'Jita' stat = 'median'/>
+	<query system = 'Amarr' stat = 'median'/>
+      </avg>
     </value>
 
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
@@ -66,7 +72,7 @@
 
   <outputs>
     <!-- I've added an output section to make custom output "easier". -->
-    <output enabled='true' module='html'> 
+    <output enabled='true' module='iidp'> 
       <args outputprefix='' uniquefiles='true'/>
     </output>
   </outputs>

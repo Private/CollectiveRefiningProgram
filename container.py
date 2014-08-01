@@ -182,9 +182,14 @@ class Container:
         for itm in self.contents:            
             for r in itm['yield']:                
                 if __contains(self.refining_yield, r['typeID']):
-                    __update(self.refining_yield, r['typeID'], r['quantity'])
+                    __update(self.refining_yield, 
+                             r['typeID'], 
+                             r['quantity'] * itm['quantity'])
                 else:
-                    __insert(self.refining_yield, r['typeID'], r['name'], r['quantity'])
+                    __insert(self.refining_yield, 
+                             r['typeID'], 
+                             r['name'], 
+                             r['quantity'] * itm['quantity'])
 
         # Some pricing for the refinement yields would be nice as well.
         typeIDs = map(lambda r: r['typeID'], self.refining_yield)

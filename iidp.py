@@ -61,11 +61,13 @@ def th(s):
 
 
 def totalSellValue(container):
-    return sum(map(lambda itm: itm['value'] if itm['value'] else 0.0, container.contents))
+    return sum(map(lambda itm: itm['value'] * itm['quantity'] 
+                   if itm['value'] else 0.0, container.contents))
 
 
 def totalYieldValue(container):
-    return sum(map(lambda itm: itm['value'] if itm['value'] else 0.0, container.refining_yield))
+    return sum(map(lambda itm: itm['value'] * itm['quantity']
+                   if itm['value'] else 0.0, container.refining_yield))
 
 
 def buildSummary(can):
