@@ -1,7 +1,6 @@
 """
 Kristoffer Langeland Knudsen
 rainbowponyprincess@gmail.com
-
 """
 
 
@@ -62,6 +61,7 @@ def main(configfile):
 
     print("")
     print("Requesting AssetLists...")
+	print("")
 
     
     containers = []
