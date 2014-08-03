@@ -68,7 +68,7 @@ def fetchUpdate(configtree):
 
         if not file: continue
 
-        print(file)
+        print("\t\t" + file)
         
         # Delete the old file.
         os.remove(file)
@@ -78,3 +78,12 @@ def fetchUpdate(configtree):
 
     # Clean up, and pretend nothing ever happened. 
     os.rmdir(path)
+
+    # All right - we need to execute the new update's hooks, then we're done. 
+    if os.path.exists('update_hook.py'):
+        hooks = __import__('upddate_hook.py')
+        hooks.execute(configtree)
+    
+    print("\tUpdate complete.")
+    sys.exit()
+    
