@@ -34,10 +34,15 @@ def update(configtree):
 
 def checkVersion(versionURL):
 
-    currentVersion = open('version').read()
-    remoteVersion = urllib.urlopen(versionURL).read()
+    localVersion = open('version')
+    remoteVersion = urllib.urlopen(versionURL)
     
-    return StrictVersion(remoteVersion) > StrictVersion(currentVersion)
+    res = StrictVersion(remoteVersion.read()) > StrictVersion(localVersion.read())
+
+    localVersion.close()
+    remoteVersion.close()    
+    
+    return res
     
 ## --------------------------------------------------------------- ##
 
