@@ -38,7 +38,7 @@ def checkVersion(versionURL):
     localVersion = open('version')
     remoteVersion = urllib.urlopen(versionURL)
     
-    res = StrictVersion(remoteVersion.read()) > StrictVersion(localVersion.read(())
+    res = StrictVersion(remoteVersion.read()) > StrictVersion(localVersion.read())
 
     localVersion.close()
     remoteVersion.close()
