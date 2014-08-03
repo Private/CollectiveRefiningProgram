@@ -4,6 +4,7 @@ rainbowponyprincess@gmail.com
 """
 
 import os
+import sys
 import time
 import urllib
 import urllib2
@@ -29,9 +30,9 @@ def update(configtree):
         print("")
         print("   No update available")
     
-    fetchUpdate(configtree)
     
 ## --------------------------------------------------------------- ##
+
 
 def checkVersion(versionURL):
 
@@ -44,8 +45,10 @@ def checkVersion(versionURL):
     remoteVersion.close()
     
     return res
+
     
 ## --------------------------------------------------------------- ##
+
 
 def fetchUpdate(configtree):
 
