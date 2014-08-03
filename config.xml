@@ -8,8 +8,7 @@
     <core>
         <timer>86400</timer>
         <version>https://raw.githubusercontent.com/Private/CollectiveRefiningProgram/stable/version</version>
-        <url>https://github.com/Private/CollectiveRefiningProgram/archive/wip/updates.zip</url>
-        <!-- <url>https://github.com/Private/CollectiveRefiningProgram/archive/stable.zip</url> -->
+        <url>https://github.com/Private/CollectiveRefiningProgram/archive/stable.zip</url>
     </core>
     <database>
         <timer>86400</timer>

@@ -87,6 +87,7 @@ def fetchUpdate(configtree):
         hooks = __import__('upddate_hook.py')
         hooks.execute(configtree)
     
+    print("")
     print("\tUpdate complete.")
     sys.exit()
     
