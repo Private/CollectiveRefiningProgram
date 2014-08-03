@@ -29,7 +29,6 @@ def update(configtree):
         print("")
         print("   No update available")
     
-    fetchUpdate(configtree)
     
 ## --------------------------------------------------------------- ##
 
@@ -60,6 +59,9 @@ def fetchUpdate(configtree):
    
     for name in zip.namelist():
         (path, file) = os.path.split(name)
+        
+        if not file: continue
+
         print(file)
         
         # Delete the old file.
@@ -70,3 +72,5 @@ def fetchUpdate(configtree):
 
     # Clean up, and pretend nothing ever happened. 
     os.rmdir(path)
+    
+    
