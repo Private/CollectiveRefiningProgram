@@ -42,7 +42,39 @@ def initialize(configtree, directory, filename):
 
     cache = sql.connect(filename)
 
+## --------------------------------------------------------------- ##
 
+
+def checkUpdateTimer(timer):
+
+    global cache
+    
+    cursor = cache.cursor()
+    cursor.execute("SELECT updateAfter FROM updateTimers WHERE timer = ?", [timer])
+    
+    res = cursor.fetchone()
+    if res:
+        (t, ) = res
+        return t > time.time()
+    else:
+        return True
+
+def resetUpdateTimer(timer, time):
+
+    global cache
+    
+    cursor = cache.cursor()
+    
+    # Does the timer exist?
+    cursor.execute("SELECT * FROM updateTimers WHERE timer = ?", [timer])
+    if cursor.fetchone():
+        cursor.execute("UPDATE updateTimers SET updateAfter = ? WHERE timer = ?", [time, timer])
+    else:
+        cursor.execute("INSERT INTO updateTimers (timer, updateAfter) VALUES (?, ?)", [timer, time])
+
+    cache.commit()
+        
+        
 ## --------------------------------------------------------------- ##
 
 
@@ -152,10 +184,10 @@ def buildContainers(assetlist, locations):
         c.addContents(assets)
 
     return containers
-
-
     
+
 ## --------------------------------------------------------------- ##
+
 
 def getCache(cacheName):
     """
@@ -258,11 +290,20 @@ def initCacheDatabase(filename):
        PRIMARY KEY ("systemID", "typeID")
     )
     """
+    
+    updateQuery = """
+    CREATE TABLE "updateTimers" (
+        "timer" varchar(30) NOT NULL,
+        "updateAfter" double NOT NULL,
+        PRIMARY KEY ("timer")
+    )
+    """
 
     cursor = db.cursor()
     cursor.execute(apiQuery)
     cursor.execute(marketQuery)
-
+    cursor.execute(updateQuery)
+    
     db.commit()
         
 ## --------------------------------------------------------------- ##    

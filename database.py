@@ -5,23 +5,24 @@ rainbowponyprincess@gmail.com
 
 import os
 import bz2
-import httplib
+import urllib2
 import sqlite3 as sql
 
 global db
 
 
-def initialize(filename):
+def initialize(configtree):
     """
     Initialize the sqlite3 database. This provides access to the EVE Online database 
     dump, containing information about item names, reprocessing yields, and so on. 
     """
 
     global db
+    filename = configtree.findtext(".//updates/database/filename")
 
     if not os.path.isfile(filename):
         # Some skank has sabotaged the database. It's time for an update.        
-        updateDatabase(filename)
+        updateDatabase(configtree)
         
     db = sql.connect(filename)
 
@@ -32,25 +33,25 @@ def cursor():
     return db.cursor()
 
 
-def updateDatabase(filename):
+def updateDatabase(configtree):
     """
     Update the EVE Online database dump. Awesome. 
     """
 
+    url = configtree.findtext(".//updates/database/url")
+    filename = configtree.findtext(".//updates/database/filename")
+    
     print("Updating database...")
         
     print("Fetching sqlite database dump:")
-    print("https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2")
+    print(url)
     
     # All right - get the sqlite dump. 
-    conn = httplib.HTTPSConnection("www.fuzzwork.co.uk")
-    conn.request("GET", "/dump/sqlite-latest.sqlite.bz2")
-    response = conn.getresponse()
+    response = urllib2.urlopen(url)
 
-    print("\tResponse: " + str(response.status) + " " + str(response.reason))
-    print("\tFile size: " + str(response.length) + " bytes")
+    print("\tResponse: " + str(response.getcode()))
     
-    if response.status != 200:
+    if response.getcode() != 200:
         return
 
     print("Downloading...")
@@ -88,11 +89,8 @@ def trimDatabase(filename):
     for name, _ in cursor.fetchall():
         
         if name not in tables:
-            print("\tDropping table: " + name)
             db.execute("DROP TABLE " + name + ";")
             db.commit()
-        else:
-            print("\tKeeping table: " + name)
 
     db.execute("VACUUM")
     db.close()
