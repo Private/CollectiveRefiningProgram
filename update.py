@@ -65,6 +65,9 @@ def fetchUpdate(configtree):
    
     for name in zip.namelist():
         (path, file) = os.path.split(name)
+
+        if not file: continue
+
         print(file)
         
         # Delete the old file.
