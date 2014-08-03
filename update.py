@@ -3,6 +3,8 @@ Kristoffer Langeland Knudsen
 rainbowponyprincess@gmail.com
 """
 
+import os
+import sys
 import time
 import urllib
 import urllib2
@@ -23,23 +25,30 @@ def update(configtree):
     if checkVersion(configtree.findtext(".//updates/core/version")):
         print("")
         print("   Update available.")
-        
+        fetchUpdate(configtree)
     else:
         print("")
         print("   No update available")
     
-    fetchUpdate(configtree)
     
 ## --------------------------------------------------------------- ##
+
 
 def checkVersion(versionURL):
 
-    currentVersion = open('version').read()
-    remoteVersion = urllib.urlopen(versionURL).read()
+    localVersion = open('version')
+    remoteVersion = urllib.urlopen(versionURL)
     
-    return StrictVersion(remoteVersion) > StrictVersion(currentVersion)
+    res = StrictVersion(remoteVersion.read()) > StrictVersion(localVersion.read())
+
+    localVersion.close()
+    remoteVersion.close()
+    
+    return res
+
     
 ## --------------------------------------------------------------- ##
+
 
 def fetchUpdate(configtree):
 
@@ -52,11 +61,33 @@ def fetchUpdate(configtree):
     archive = StringIO.StringIO(response.read())
  
     zip = zipfile.ZipFile(archive)
+    zip.extractall()
 
     print("\tReplacing files...")
     print("")
-    
+   
     for name in zip.namelist():
-        (_, file) = os.path.split(name)
+        (path, file) = os.path.split(name)
+
+        if not file: continue
+
         print("\t\t" + file)
+        
+        # Delete the old file.
+        if os.path.exists(file): os.remove(file)
+        
+        # Move the new file into place.
+        os.rename(name, file)
+
+    # Clean up, and pretend nothing ever happened. 
+    os.rmdir(path)
+
+    # All right - we need to execute the new update's hooks, then we're done. 
+    if os.path.exists('update_hook.py'):
+        hooks = __import__('upddate_hook.py')
+        hooks.execute(configtree)
+    
+    print("")
+    print("\tUpdate complete.")
+    sys.exit()
     
