@@ -19,6 +19,7 @@ def update(configtree):
     # Download the version file, check if we need an update.
     if checkVersion(configtree.findtext(".//updates/core/version")):
         print("Update available.")
+        
     else:
         print("No update available")
         
@@ -32,3 +33,5 @@ def checkVersion(versionURL):
     remoteVersion = urllib.urlopen(versionURL).read()
     
     return StrictVersion(remoteVersion) > StrictVersion(currentVersion)
+    
+## --------------------------------------------------------------- ##
