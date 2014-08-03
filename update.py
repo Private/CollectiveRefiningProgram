@@ -3,6 +3,7 @@ Kristoffer Langeland Knudsen
 rainbowponyprincess@gmail.com
 """
 
+import os
 import time
 import urllib
 import urllib2
@@ -23,7 +24,7 @@ def update(configtree):
     if checkVersion(configtree.findtext(".//updates/core/version")):
         print("")
         print("   Update available.")
-        
+        fetchUpdate(configtree)
     else:
         print("")
         print("   No update available")
@@ -52,11 +53,20 @@ def fetchUpdate(configtree):
     archive = StringIO.StringIO(response.read())
  
     zip = zipfile.ZipFile(archive)
+    zip.extractall()
 
     print("\tReplacing files...")
     print("")
-    
+   
     for name in zip.namelist():
-        (_, file) = os.path.split(name)
-        print("\t\t" + file)
-    
+        (path, file) = os.path.split(name)
+        print(file)
+        
+        # Delete the old file.
+        os.remove(file)
+        
+        # Move the new file into place.
+        os.rename(name, file)
+
+    # Clean up, and pretend nothing ever happened. 
+    os.rmdir(path)
