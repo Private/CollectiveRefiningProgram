@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ElementTree
 
 import key
 import cache
+import update
 import database
 
 
@@ -37,7 +38,7 @@ def main(configfile):
     global configtree
     configtree = ElementTree.parse(file(configfile))
 
-    db_file = configtree.findtext("./database/filename")
+    db_file = configtree.findtext(".//updates/database/filename")
     cache_file = configtree.findtext("./cache/filename")
     cache_directory = configtree.findtext("./cache/directory")
     
@@ -46,9 +47,14 @@ def main(configfile):
     print("   Cache file:\t\t" + cache_file)
     print("")
 
-    database.initialize(db_file)
+    database.initialize(configtree)
     cache.initialize(configtree, cache_directory, cache_file)
 
+    ## Good, do we need an update. 
+    
+    if cache.checkUpdateTimer('core'):
+        update.update(configtree)
+    
     ## All right - initialize the keys. 
 
     keys = []
@@ -61,8 +67,7 @@ def main(configfile):
 
     print("")
     print("Requesting AssetLists...")
-	print("")
-
+    print("")
     
     containers = []
 

@@ -2,12 +2,22 @@
 <config>
   <!-- This file contains the CRP options. -->
 
-  <database>
-    <!-- Not much reason to change this, unless you really really really want to run off
-	 multiple different databases. -->
-    <filename>latest.sqlite</filename>
-  </database>
-  
+  <updates>
+    <!-- This is mostly about updates. Yep. I'm setting these timers so a check is limited once per day. -->
+    <!-- 24 hours = 86400 seconds -->
+    <core>
+        <timer>86400</timer>
+        <version>https://raw.githubusercontent.com/Private/CollectiveRefiningProgram/stable/version</version>
+        <url>Foo</url>
+    </core>
+
+    <database>
+        <timer>86400</timer>
+        <url>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2</url>
+        <filename>latest.sqlite</filename>
+    </database>
+  </updates>
+    
   <cache>
     <!-- I'm adding a cache here, I should have done do long ago. -->
     <directory>cache</directory>
@@ -16,12 +26,12 @@
 
   <namingpatterns>
     <!-- This segment allows user-defined container naming patterns. These are fed 
-	 straight to the standard Python re package, so see code or documentation 
-	 for more info. -->
+     straight to the standard Python re package, so see code or documentation 
+     for more info. -->
 
     <!-- This reads as "Any character, any number of times, then "CRP", then any 
-	 character, any number of times". In other words, any string with "CRP" in 
-	 it. -->
+     character, any number of times". In other words, any string with "CRP" in 
+     it. -->
     <pattern>(?:.*)(CRP)(?:.*)</pattern>
 
     <!-- For those of you who are old-school: -->
@@ -37,16 +47,16 @@
     <!-- The market segment allows you to control how prices are estimated. -->
 
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
-	 (average) are supported. Leaf nodes should be query for obvious reasons -->
+     (average) are supported. Leaf nodes should be query for obvious reasons -->
     <value>
       <avg>
-	<query system = 'Jita' stat = 'median'/>
-	<query system = 'Amarr' stat = 'median'/>
+    <query system = 'Jita' stat = 'median'/>
+    <query system = 'Amarr' stat = 'median'/>
       </avg>
     </value>
 
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
-	 human time-->
+     human time-->
     <cachetime>3600</cachetime> 
   </market>
   
@@ -54,7 +64,7 @@
     <!-- This segment contains EVE API keys. -->
     
     <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
-	 though I may not have any suitable cans at the moment. -->      
+     though I may not have any suitable cans at the moment. -->      
     <apikey note='EvilMarvin (Public CRP Key)' enabled='true'>
       <keyID>2747696</keyID>
       <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
@@ -62,7 +72,7 @@
     
     
     <!-- This key is no longer valid, but it should serve well enough to illustrate
-	 the entry. -->
+     the entry. -->
     <apikey note='PAC-C (Test Key)' enabled='false'>
       <keyID>2755146</keyID>
       <vCode>uTsyGQ4bzivLqyJGt24GRV0znqYiF6kzUkl52eiCFt84ETxgHhq3iFUZczEbFUln</vCode>
