@@ -52,8 +52,13 @@ def main(configfile):
 
     ## Good, do we need an update. 
     
+    print("")
+    print("Checking for updates...")
+
     if cache.checkUpdateTimer('core'):
         update.update(configtree)
+    
+    print("")
     
     ## All right - initialize the keys. 
 

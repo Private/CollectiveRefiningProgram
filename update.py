@@ -7,6 +7,8 @@ import time
 import urllib
 import urllib2
 import zipfile
+import StringIO
+import os.path
 
 from distutils.version import StrictVersion
 
@@ -15,17 +17,18 @@ import cache
 
 def update(configtree):
 
-    print("")
-    print("Checking for updates...")
+    cache.resetUpdateTimer('core', time.time() + float(configtree.findtext('.//updates/core/timer')))
 
     # Download the version file, check if we need an update.
     if checkVersion(configtree.findtext(".//updates/core/version")):
-        print("\tUpdate available.")
+        print("")
+        print("   Update available.")
         
     else:
-        print("\tNo update available")
-        
-    cache.resetUpdateTimer('core', time.time() + float(configtree.findtext('.//updates/core/timer')))
+        print("")
+        print("   No update available")
+    
+    fetchUpdate(configtree)
     
 ## --------------------------------------------------------------- ##
 
@@ -40,13 +43,20 @@ def checkVersion(versionURL):
 
 def fetchUpdate(configtree):
 
-    print("\tDownloading update.")
-    print("\t" + configtree.findtext(".//updates/core/url"))
+    print("")
+    print("\tRequesting update.")
     
     response = urllib2.urlopen(configtree.findtext(".//updates/core/url"))
-    print("\tResponse: " + response.getcode())
+    print("\tResponse: " + str(response.getcode()))
+
+    archive = StringIO.StringIO(response.read())
+ 
+    zip = zipfile.ZipFile(archive)
+
+    print("\tReplacing files...")
+    print("")
     
-    zip = zipfile.ZipFile(response, 'r')
-    zip.extractall("./update")
-    
+    for name in zip.namelist():
+        (_, file) = os.path.split(name)
+        print("\t\t" + file)
     
