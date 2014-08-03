@@ -71,7 +71,7 @@ def fetchUpdate(configtree):
         print("\t\t" + file)
         
         # Delete the old file.
-        os.remove(file)
+        if os.path.exists(file): os.remove(file)
         
         # Move the new file into place.
         os.rename(name, file)
