@@ -27,7 +27,8 @@ def main(configfile):
     
     versionfile = open('version', 'r')
     version = versionfile.read()
-
+    versionfile.close()
+    
     print("")
     print("Collective Refining Program")
     print("Version: " + version)
