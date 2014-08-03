@@ -5,6 +5,8 @@ rainbowponyprincess@gmail.com
 
 import time
 import urllib
+import urllib2
+import zipfile
 
 from distutils.version import StrictVersion
 
@@ -18,10 +20,10 @@ def update(configtree):
 
     # Download the version file, check if we need an update.
     if checkVersion(configtree.findtext(".//updates/core/version")):
-        print("Update available.")
+        print("\tUpdate available.")
         
     else:
-        print("No update available")
+        print("\tNo update available")
         
     cache.resetUpdateTimer('core', time.time() + float(configtree.findtext('.//updates/core/timer')))
     
@@ -35,3 +37,16 @@ def checkVersion(versionURL):
     return StrictVersion(remoteVersion) > StrictVersion(currentVersion)
     
 ## --------------------------------------------------------------- ##
+
+def fetchUpdate(configtree):
+
+    print("\tDownloading update.")
+    print("\t" + configtree.findtext(".//updates/core/url"))
+    
+    response = urllib2.urlopen(configtree.findtext(".//updates/core/url"))
+    print("\tResponse: " + response.getcode())
+    
+    zip = zipfile.ZipFile(response, 'r')
+    zip.extractall("./update")
+    
+    

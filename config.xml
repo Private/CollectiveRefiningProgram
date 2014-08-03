@@ -8,7 +8,7 @@
     <core>
         <timer>86400</timer>
         <version>https://raw.githubusercontent.com/Private/CollectiveRefiningProgram/stable/version</version>
-        <url>Foo</url>
+        <url>https://github.com/Private/CollectiveRefiningProgram/archive/stable.zip</url>
     </core>
 
     <database>
