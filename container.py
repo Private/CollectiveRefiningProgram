@@ -5,8 +5,24 @@ rainbowponyprincess@gmail.com
 
 import xml.etree.ElementTree as ElementTree
 
+import math
+
 import cache
 import database as db
+
+
+## --------------------------------------------------------------- ##
+
+
+global cfgtree
+
+def initialize(configtree):
+        
+    global cfgtree
+    cfgtree = configtree
+    
+
+## --------------------------------------------------------------- ##
 
 
 class Container:    
@@ -22,7 +38,8 @@ class Container:
         self.itemID = itemID
 
         self.contents = []
-        self.refining_yield = []
+        self.mineralContent = []
+        self.attainableYield = []
 
         self.locationID = None
         self.locationName = None
@@ -132,11 +149,12 @@ class Container:
 
 
     def __itmYield(self):
-
+    
         for itm in self.contents:
 
-            itm['yield'] = []
-            
+            itm['mineralContent'] = []
+            itm['attainableYield'] = []
+                
             cursor = db.cursor()
             cursor.execute("SELECT materialTypeID, quantity " +
                            "FROM invTypeMaterials " +
@@ -148,24 +166,28 @@ class Container:
                 cursor.execute("SELECT typeName FROM invTypes WHERE typeID = ?", [id])
                 (name, ) = cursor.fetchone()
                   
-                itm['yield'] += [{'name' : name,
-                                  'typeID' : str(id),
-                                  'quantity' : n}]
+                itm['mineralContent'] += [{'name' : name,
+                                           'typeID' : str(id),
+                                           'quantity' : n}]
+                itm['attainableYield'] += [{'name' : name,
+                                            'typeID' : str(id),
+                                            'quantity' : math.floor(self.__refEff() * n)}]
 
 
     def __itmYieldValue(self):
-
+    
         for itm in self.contents:
             
-            typeIDs = map(lambda r: r['typeID'], itm['yield'])
+            typeIDs = map(lambda r: r['typeID'], itm['attainableYield'])
             
             prices = cache.getValues(typeIDs)
 
-            itm['yieldvalue'] = sum(map(lambda r: r['quantity'] * prices[r['typeID']], itm['yield']))
+            itm['yieldValue'] = sum(map(lambda r: r['quantity'] * prices[r['typeID']], itm['attainableYield']))
 
 
     def __totalYield(self):
 
+        # Some utility functions. 
         def __contains(ref_yield, typeID):
             return any(map(lambda r: r['typeID'] == typeID, ref_yield))
 
@@ -180,24 +202,38 @@ class Container:
                            'quantity' : quantity}]
 
         for itm in self.contents:            
-            for r in itm['yield']:                
-                if __contains(self.refining_yield, r['typeID']):
-                    __update(self.refining_yield, 
+            for r in itm['mineralContent']:                
+                if __contains(self.mineralContent, r['typeID']):
+                    __update(self.mineralContent, 
                              r['typeID'], 
                              r['quantity'] * itm['quantity'])
                 else:
-                    __insert(self.refining_yield, 
+                    __insert(self.mineralContent, 
                              r['typeID'], 
                              r['name'], 
                              r['quantity'] * itm['quantity'])
 
         # Some pricing for the refinement yields would be nice as well.
-        typeIDs = map(lambda r: r['typeID'], self.refining_yield)
+        typeIDs = map(lambda r: r['typeID'], self.mineralContent)
 
         prices = cache.getValues(typeIDs)
 
-        for r in self.refining_yield:
+        for r in self.mineralContent:
             r['value'] = prices[r['typeID']]
+
+        # Calculate the refining yield. 
+        for r in self.mineralContent:            
+            
+            # Copy the dict from the mineral contents, and adjust the quantity.
+            r = dict(r)
+            r['quantity'] = self.__refEff() * r['quantity']
+
+            self.attainableYield += [r]
 
         
     ## --------------------------------------------------------------- ##
+
+    def __refEff(self):
+    
+        global cfgtree
+        return float(cfgtree.findtext(".//valuation/refiningEfficiency")) / 100

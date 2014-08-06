@@ -42,22 +42,24 @@
 
   </namingpatterns>
   
-  <market>
+  <valuation>
     <!-- The market segment allows you to control how prices are estimated. -->
 
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
      (average) are supported. Leaf nodes should be query for obvious reasons -->
     <value>
       <avg>
-    <query system = 'Jita' stat = 'median'/>
-    <query system = 'Amarr' stat = 'median'/>
+        <query system = 'Jita' stat = 'sell'/>
+        <query system = 'Jita' stat = 'buy'/>
       </avg>
     </value>
 
+    <!-- Set the refining return. The unit is percent. -->
+    <refiningEfficiency>55</refiningEfficiency>    
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
-     human time-->
+     human time -->
     <cachetime>3600</cachetime> 
-  </market>
+  </valuation>
   
   <apikeys>
     <!-- This segment contains EVE API keys. -->

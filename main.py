@@ -17,6 +17,7 @@ import key
 import cache
 import update
 import database
+import container
 
 
 def isEnabled(elm):    
@@ -48,6 +49,7 @@ def main(configfile):
     print("   Cache file:\t\t" + cache_file)
     print("")
 
+    container.initialize(configtree)
     database.initialize(configtree)
     cache.initialize(configtree, cache_directory, cache_file)
 

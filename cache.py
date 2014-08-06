@@ -318,12 +318,12 @@ def getValues(typeIDs):
     values = {}
     
     cursor = cache.cursor()
-    marketCacheTime = cfgtree.findtext(".//market/cachetime")
+    marketCacheTime = cfgtree.findtext(".//valuation/cachetime")
 
 
     # Look at the market expression, find determine which systems
     # we need data for. 
-    systems = getMarketSystems(cfgtree.find(".//market/value"))
+    systems = getMarketSystems(cfgtree.find(".//valuation/value"))
 
     refresh = {}
     for (systemName, systemID) in systems: refresh[systemID] = []
@@ -455,7 +455,7 @@ def evalValuation(typeIDs):
     global cache
     global cfgtree
 
-    root = cfgtree.find('.//market/value/*')
+    root = cfgtree.find('.//valuation/value/*')
 
     def __apply(f):
         

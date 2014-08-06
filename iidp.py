@@ -5,9 +5,9 @@ A Simple bit of output code, just dump some HTML.
 
 def sellProfit(itm):
     if itm['value']:
-        return itm['yieldvalue'] - itm['value']
+        return itm['yieldValue'] - itm['value']
 
-    return itm['yieldvalue']
+    return itm['yieldValue']
     
 
 def sellString(itm):
@@ -15,18 +15,18 @@ def sellString(itm):
     template = "<b><span style='color:{}'>{}</span></b> {}"
 
     def __perc(itm):
-        foo = float(min(itm['value'], itm['yieldvalue']))
-        bar = float(max(itm['value'], itm['yieldvalue']))
+        foo = float(min(itm['value'], itm['yieldValue']))
+        bar = float(max(itm['value'], itm['yieldValue']))
         return "<small>({:.1%})</small>".format((bar - foo) / foo) if foo != float(0) else ""
 
     if not itm['value']:
         return template.format('blue', 'Refine', "")
 
-    if itm['value'] < 0.90 * itm['yieldvalue']:
+    if itm['value'] < 0.90 * itm['yieldValue']:
         return template.format('blue', 'Refine', __perc(itm))
-    if itm['value'] < itm['yieldvalue']:
+    if itm['value'] < itm['yieldValue']:
         return template.format('green', 'Refine', __perc(itm))
-    if itm['value'] < 1.10 * itm['yieldvalue']:
+    if itm['value'] < 1.10 * itm['yieldValue']:
         return template.format('yellow', 'Sell', __perc(itm))
     else:
         return template.format('red', 'Sell', __perc(itm))
@@ -67,7 +67,7 @@ def totalSellValue(container):
 
 def totalYieldValue(container):
     return sum(map(lambda itm: itm['value'] * itm['quantity']
-                   if itm['value'] else 0.0, container.refining_yield))
+                   if itm['value'] else 0.0, container.attainableYield))
 
 
 def buildSummary(can):
@@ -79,7 +79,7 @@ def buildSummary(can):
         trow = "";
         prow = "";
 
-        totalYield = sorted(can.refining_yield, key=(lambda itm: itm['typeID']))
+        totalYield = sorted(can.attainableYield, key=(lambda itm: itm['typeID']))
 
         for itm in totalYield:
             hrow += th(itm['name'])
@@ -135,11 +135,11 @@ def buildRows(can):
                          name = itm['name'],
                          quantity = itm['quantity'])
 
-        row += td("{:,}".format(itm['yieldvalue']))
+        row += td("{:,}".format(itm['yieldValue']))
         row += td("{:,}".format(itm['value']) if itm['value'] else str(None))
         row += td("{:,}".format(-sellProfit(itm)))
         row += td(sellString(itm))
-        row += td("{:,}".format(itm['quantity'] * itm['yieldvalue']))
+        row += td("{:,}".format(itm['quantity'] * itm['yieldValue']))
         row += td("{:,}".format(itm['quantity'] * itm['value']) if itm['value'] else str(None))
 
         return "<tr>" + row + "</tr>"
