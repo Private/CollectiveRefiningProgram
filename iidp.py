@@ -100,7 +100,7 @@ def buildSummary(can):
     
     payout = ("<p><b>" +
               "LBP Payout: {:,} ISK <br>" +
-              "</b></p>").format(int(0.90 * totalYieldValue(can)))
+              "</b></p>").format(int(0.95 * totalYieldValue(can)))
 
     mid = ("<div>" +
            "Total Reprocessing Yield: <br>\n" +
