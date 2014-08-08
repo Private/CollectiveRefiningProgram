@@ -102,9 +102,9 @@ class Corporation:
 
         print(elm.attrib)
 
-    def getInfo():
+    def getInfo(self):
         return {'keyID' : self.keyID,
                 'vCode' : self.vCode}
 
-    def getPrefix():
+    def getPrefix(self):
         return 'corp'

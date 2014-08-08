@@ -70,15 +70,6 @@
       <keyID>2747696</keyID>
       <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
     </apikey>
-    
-    
-    <!-- This key is no longer valid, but it should serve well enough to illustrate
-     the entry. -->
-    <apikey note='PAC-C (Test Key)' enabled='false'>
-      <keyID>2755146</keyID>
-      <vCode>uTsyGQ4bzivLqyJGt24GRV0znqYiF6kzUkl52eiCFt84ETxgHhq3iFUZczEbFUln</vCode>
-    </apikey>
-      
   </apikeys>
 
   <outputs>
