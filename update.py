@@ -70,6 +70,9 @@ def fetchUpdate(configtree):
         (path, file) = os.path.split(name)
 
         if not file: continue
+        
+        # Skip config files, naturally. 
+        if file.endswith('.xml'): continue
 
         print("\t\t" + file)
         
