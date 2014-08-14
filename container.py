@@ -50,7 +50,7 @@ class Container:
         item = assets.find(".//row[@itemID='" + self.itemID + "']")
 
         self.locationID = item.get('locationID')
-        self.locationName = self.__locationName()
+        self.locationName = self.__locationName(assets)
 
         for row in item.iter('row'):            
             self.contents += [{'typeID' : row.get('typeID'),
@@ -58,7 +58,7 @@ class Container:
 
         print("")
         print("      " + self.name)
-        print("         " + self.locationName)
+        print("         " + str(self.locationName))
         print("         Containing " + str(len(self.contents)) + " item types")
 
         # So far, so good. Go though the contents and add information from the 
@@ -74,12 +74,43 @@ class Container:
 
     ## --------------------------------------------------------------- ##
     
-    def __locationName(self):
+    def __locationName(self, assets):
 
         if not self.locationID:
-            print("Skipping location for: " + self.name)
-            return "Unknown Location"
+            # We're a container inside another container, like a can in a corp hangar.
+            # Find the parent's location, or the parent's parent's...
+            # The ElementTree doesn't carry parent pointers around, so we have to do this
+            # the long way. 
+            
+            def __findLocationID(elm, locationID):
+                if elm.get('itemID') == self.itemID:
+                    return locationID
+                
+                if elm.get('locationID'):
+                    locationID = elm.get('locationID')
 
+                for e in elm:
+                    recurse = __findLocationID(e, locationID)
+                    if recurse: return recurse
+                
+                return None
+            
+            self.locationID = __findLocationID(assets.getroot(), None)
+
+            if not self.locationID:
+                print("Skipping location for: " + self.name)
+                return "Unknown Location"
+
+        # This shit is woodoo. Not my fault, it's straight out of the twisted inner workings of EVE.
+        # Apparently, corp keys will yield locations in the 66xxxxxx and 67xxxxxx range.
+        # These don't map to real locations, so some magic is in order.
+        # Apparently: 
+        #   The 66-locations become real locations if you subtract 6000001.
+        #   The 67-locations become real if you subtract 6000000.
+                
+        if self.locationID.startswith('66'): self.locationID = str(int(self.locationID) - 6000001)
+        if self.locationID.startswith('67'): self.locationID = str(int(self.locationID) - 6000000)
+                
         cursor = db.cursor()
         cursor.execute("SELECT solarSystemName " +
                        "FROM mapSolarSystems " +
@@ -109,7 +140,8 @@ class Container:
         for elm in outposts.iter('row'):
             if elm.get('stationID') == self.locationID:
                 return elm.get('stationName')
-                
+        
+        
         print("WARNING: Found no location for " + self.name)
 
         
