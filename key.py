@@ -99,12 +99,12 @@ class Corporation:
         self.note = elm.get('note')
         self.keyID = keyID
         self.vCode = vCode
-
-        print(elm.attrib)
+        
 
     def getInfo(self):
         return {'keyID' : self.keyID,
                 'vCode' : self.vCode}
 
+                
     def getPrefix(self):
         return 'corp'
