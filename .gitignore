@@ -1,0 +1,6 @@
+*.aspx
+*.pyc
+*.sqlite
+*.html
+*.bat
+corp.xml
