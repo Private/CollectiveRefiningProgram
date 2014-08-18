@@ -188,6 +188,9 @@ class Container:
             itm['attainableYield'] = []
                 
             cursor = db.cursor()
+            cursor.execute("SELECT portionSize FROM invTypes WHERE typeID = ?", [itm['typeID']])
+            (portionSize, ) = cursor.fetchone()
+            
             cursor.execute("SELECT materialTypeID, quantity " +
                            "FROM invTypeMaterials " +
                            "WHERE typeID = ?",
@@ -197,21 +200,26 @@ class Container:
 
                 cursor.execute("SELECT typeName FROM invTypes WHERE typeID = ?", [id])
                 (name, ) = cursor.fetchone()
-                  
+                                
                 itm['mineralContent'] += [{'name' : name,
                                            'typeID' : str(id),
-                                           'quantity' : n}]
+                                           'quantity' : n / portionSize}]
                 itm['attainableYield'] += [{'name' : name,
                                             'typeID' : str(id),
-                                            'quantity' : math.floor(self.__refEff() * n)}]
+                                            'quantity' : math.floor(self.__refEff(itm['typeID']) * n / portionSize)}]
 
 
     def __itmYieldValue(self):
     
         for itm in self.contents:
             
-            typeIDs = map(lambda r: r['typeID'], itm['attainableYield'])
+            if itm['name'] == 'Mercoxit':
+                print(itm['name'] + " " + str(itm['value']))
+                for r in itm['attainableYield']:
+                    print(r)
+                
             
+            typeIDs = map(lambda r: r['typeID'], itm['attainableYield'])
             prices = cache.getValues(typeIDs)
 
             itm['yieldValue'] = sum(map(lambda r: r['quantity'] * prices[r['typeID']], itm['attainableYield']))
@@ -233,39 +241,49 @@ class Container:
                            'typeID' : typeID,
                            'quantity' : quantity}]
 
-        for itm in self.contents:            
-            for r in itm['mineralContent']:                
-                if __contains(self.mineralContent, r['typeID']):
-                    __update(self.mineralContent, 
-                             r['typeID'], 
-                             r['quantity'] * itm['quantity'])
-                else:
-                    __insert(self.mineralContent, 
-                             r['typeID'], 
-                             r['name'], 
-                             r['quantity'] * itm['quantity'])
+        def __condense(ref_yield, key):                   
+            for itm in self.contents:            
+                for r in itm[key]:                
+                    if __contains(ref_yield, r['typeID']):
+                        __update(ref_yield, 
+                                r['typeID'], 
+                                r['quantity'] * itm['quantity'])
+                    else:
+                        __insert(ref_yield, 
+                                r['typeID'], 
+                                r['name'], 
+                                r['quantity'] * itm['quantity'])
 
+        __condense(self.mineralContent, 'mineralContent')
+        __condense(self.attainableYield, 'attainableYield')
+                                                          
         # Some pricing for the refinement yields would be nice as well.
-        typeIDs = map(lambda r: r['typeID'], self.mineralContent)
-
+        typeIDs = map(lambda r: r['typeID'], self.mineralContent + self.attainableYield)
         prices = cache.getValues(typeIDs)
 
-        for r in self.mineralContent:
+        for r in self.mineralContent + self.attainableYield:
             r['value'] = prices[r['typeID']]
-
-        # Calculate the refining yield. 
-        for r in self.mineralContent:            
-            
-            # Copy the dict from the mineral contents, and adjust the quantity.
-            r = dict(r)
-            r['quantity'] = self.__refEff() * r['quantity']
-
-            self.attainableYield += [r]
-
         
     ## --------------------------------------------------------------- ##
 
-    def __refEff(self):
+    def __refEff(self, typeID):
     
         global cfgtree
-        return float(cfgtree.findtext(".//valuation/refiningEfficiency")) / 100
+        
+        cursor = db.cursor()
+        cursor.execute("SELECT groupID, marketGroupID FROM invTypes WHERE typeID = ?", [typeID])
+        (groupID, marketGroupID) = cursor.fetchone()
+
+        # I'm using the market groups, the parent group for all the ore is "Ore" - simple enough. 
+        cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [marketGroupID])
+        (marketGroupName, parentGroupID) = cursor.fetchone()
+        
+        cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [parentGroupID])
+        (marketGroupName, parentGroupID) = cursor.fetchone()
+                
+        if marketGroupName == 'Ore':
+            __lookup = ".//valuation/refiningEfficiency/ore"
+        else:
+            __lookup = ".//valuation/refiningEfficiency/modules"
+        
+        return float(cfgtree.findtext(__lookup)) / 100

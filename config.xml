@@ -46,7 +46,7 @@
     <!-- The market segment allows you to control how prices are estimated. -->
 
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
-     (average) are supported. Leaf nodes should be query for obvious reasons -->
+     (average) are supported. Leaf nodes should be query for obvious reasons. -->
     <value>
       <avg>
         <query system = 'Jita' stat = 'sell'/>
@@ -55,7 +55,11 @@
     </value>
 
     <!-- Set the refining return. The unit is percent. -->
-    <refiningEfficiency>55</refiningEfficiency>    
+    <refiningEfficiency>
+        <ore>70</ore>
+        <modules>55</modules>
+    </refiningEfficiency>
+
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
      human time -->
     <cachetime>3600</cachetime> 
