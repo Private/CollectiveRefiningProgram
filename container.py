@@ -203,21 +203,15 @@ class Container:
                                 
                 itm['mineralContent'] += [{'name' : name,
                                            'typeID' : str(id),
-                                           'quantity' : n / portionSize}]
+                                           'quantity' : float(n) / float(portionSize)}]
                 itm['attainableYield'] += [{'name' : name,
                                             'typeID' : str(id),
-                                            'quantity' : math.floor(self.__refEff(itm['typeID']) * n / portionSize)}]
+                                            'quantity' : float(self.__refEff(itm['typeID']) * n) / float(portionSize)}]
 
 
     def __itmYieldValue(self):
     
         for itm in self.contents:
-            
-            if itm['name'] == 'Mercoxit':
-                print(itm['name'] + " " + str(itm['value']))
-                for r in itm['attainableYield']:
-                    print(r)
-                
             
             typeIDs = map(lambda r: r['typeID'], itm['attainableYield'])
             prices = cache.getValues(typeIDs)
@@ -266,22 +260,29 @@ class Container:
         
     ## --------------------------------------------------------------- ##
 
-    def __refEff(self, typeID):
-    
-        global cfgtree
-        
+    def __isOre(self, typeID):
+
         cursor = db.cursor()
         cursor.execute("SELECT groupID, marketGroupID FROM invTypes WHERE typeID = ?", [typeID])
         (groupID, marketGroupID) = cursor.fetchone()
 
+        if not marketGroupID:
+            return False
+        
         # I'm using the market groups, the parent group for all the ore is "Ore" - simple enough. 
         cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [marketGroupID])
-        (marketGroupName, parentGroupID) = cursor.fetchone()
+        (marketGroupName, parentGroupID) = cursor.fetchone()  
         
         cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [parentGroupID])
         (marketGroupName, parentGroupID) = cursor.fetchone()
-                
-        if marketGroupName == 'Ore':
+        
+        return marketGroupName == 'Ore'
+    
+    def __refEff(self, typeID):
+
+        global cfgtree
+    
+        if self.__isOre(typeID):
             __lookup = ".//valuation/refiningEfficiency/ore"
         else:
             __lookup = ".//valuation/refiningEfficiency/modules"

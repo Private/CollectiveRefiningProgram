@@ -56,7 +56,7 @@
 
     <!-- Set the refining return. The unit is percent. -->
     <refiningEfficiency>
-        <ore>70</ore>
+        <ore>78.522</ore>
         <modules>55</modules>
     </refiningEfficiency>
 
