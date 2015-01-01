@@ -13,6 +13,7 @@
     <database>
         <timer>86400</timer>
         <url>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2</url>
+	<md5>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5</md5>
         <filename>latest.sqlite</filename>
     </database>
   </updates>
@@ -74,6 +75,7 @@
       <keyID>2747696</keyID>
       <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
     </apikey>
+
   </apikeys>
 
   <outputs>

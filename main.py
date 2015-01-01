@@ -49,19 +49,26 @@ def main(configfile):
     print("   Cache file:\t\t" + cache_file)
     print("")
 
-    container.initialize(configtree)
-    database.initialize(configtree)
     cache.initialize(configtree, cache_directory, cache_file)
 
-    ## Good, do we need an update. 
+    ## Good, do we need an update? 
     
     print("")
-    print("Checking for updates...")
+    print("Checking for software updates...")
 
     if cache.checkUpdateTimer('core'):
         update.update(configtree)
     
-    print("")
+    print("")    
+    print("Checking for EVE online database updates...")
+
+    if cache.checkUpdateTimer('database'):
+        database.update(configtree)
+
+    # Load the game data.
+    
+    container.initialize(configtree)
+    database.initialize(configtree)
     
     ## All right - initialize the keys. 
 

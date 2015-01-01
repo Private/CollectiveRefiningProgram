@@ -42,6 +42,7 @@ def initialize(configtree, directory, filename):
 
     cache = sql.connect(filename)
 
+
 ## --------------------------------------------------------------- ##
 
 
@@ -73,8 +74,8 @@ def resetUpdateTimer(timer, time):
         cursor.execute("INSERT INTO updateTimers (timer, updateAfter) VALUES (?, ?)", [timer, time])
 
     cache.commit()
-        
-        
+         
+       
 ## --------------------------------------------------------------- ##
 
 
