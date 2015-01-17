@@ -77,9 +77,8 @@ def fetchUpdate(configtree):
                 # Does the config already exist?
                 # Just delete the file in the zip archive. 
                 os.remove(name)
+                continue
 
-        print("\t\t" + file)
-        
         # Delete the old file.
         if os.path.exists(file): os.remove(file)
         
@@ -88,13 +87,9 @@ def fetchUpdate(configtree):
 
     # Clean up, and pretend nothing ever happened. 
     os.rmdir(path)
-
-    # All right - we need to execute the new update's hooks, then we're done. 
-    if os.path.exists('update_hook.py'):
-        hooks = __import__('upddate_hook.py')
-        hooks.execute(configtree)
     
     print("")
     print("\tUpdate complete.")
+    print("")
     sys.exit()
     
