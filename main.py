@@ -88,7 +88,6 @@ def main(userconfig):
 
     print("")
     print("Requesting AssetLists...")
-    print("")
     
     containers = []
 

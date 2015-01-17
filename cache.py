@@ -110,6 +110,7 @@ def getContainers(key):
 
     global cachedir
 
+    print("")
     print("   Processing key: " + key.note)
 
     assetCache = getCache(key.keyID + "/AssetList")
@@ -261,10 +262,10 @@ def fetchPage(key, page, additional_info = {}):
     f = open(cachedir + '/' + filename, 'w')
     f.write(body)
     f.close()
- 
+        
     # All right - I'll need a timer on the cache. 
     root = ElementTree.fromstring(body)
-
+    
     currentTime = time.strptime(root.findtext("currentTime"),
                                 "%Y-%m-%d %H:%M:%S")
     cachedUntil = time.strptime(root.findtext("cachedUntil"),

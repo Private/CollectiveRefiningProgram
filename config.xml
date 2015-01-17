@@ -68,7 +68,7 @@
 	    marketgroups = "{'Minerals': 0.95, 
 			    'Salvaged Materials': 0.95, 
 			    'Datacores': 0.95, 
-			    'Decryptors': 0.95}"/>
+			    'Generic Decryptor': 0.95}"/>
     </output>
   </outputs>
 </config>
