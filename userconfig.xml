@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<userconfig>
+  <!--  -->
+  <config>config.xml</config>
+  
+  <!-- This segment contains user-defined naming patterns. -->
+  <namingpatterns>
+    <!-- These patterns are applied in addition to the ones in the specified
+	 config file -->
+
+    <!-- I use cans named 'Sell' and 'Unsorted' myself, so I've added them here
+	 so I get them included as well. -->
+    <pattern>Sell</pattern>
+    <pattern>Unsorted</pattern>
+  </namingpatterns>
+  
+  <apikeys>
+    <!-- This segment contains EVE API keys. -->
+    
+    <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
+	 though I may not have any suitable cans at the moment. -->      
+    <apikey note='EvilMarvin (Public CRP Key)' enabled='true'>
+      <!-- The note above is for your convenience, the software prints it out 
+	   to tell you what key it's processing. Consider it the 'human-name' 
+	   of the key. -->
+      <keyID>2747696</keyID>
+      <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
+
+      <!-- This key is a character key, giving access to only EvilMarvin. Thus, I 
+	   don't really need to specify the character. If you are using an account-wide 
+	   key, you can specify which character to use with a character-entry, like so. -->
+      <character>EvilMarvin</character>
+    </apikey>    
+  </apikeys>
+</userconfig>

@@ -1,87 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config>
   <!-- This file contains the CRP options. -->
-
+  
   <updates>
     <!-- This is mostly about updates. Yep. I'm setting these timers so a check is limited once per day. -->
     <!-- 24 hours = 86400 seconds -->
     <core>
-        <timer>86400</timer>
-        <version>https://raw.githubusercontent.com/Private/CollectiveRefiningProgram/stable/version</version>
-        <url>https://github.com/Private/CollectiveRefiningProgram/archive/stable.zip</url>
+      <timer>86400</timer>
+      <version>https://raw.githubusercontent.com/Private/CollectiveRefiningProgram/stable/version</version>
+      <url>https://github.com/Private/CollectiveRefiningProgram/archive/stable.zip</url>
     </core>
     <database>
-        <timer>86400</timer>
-        <url>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2</url>
-	<md5>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5</md5>
-        <filename>latest.sqlite</filename>
+      <timer>86400</timer>
+      <url>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2</url>
+      <md5>https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5</md5>
+      <filename>latest.sqlite</filename>
     </database>
   </updates>
-    
+  
   <cache>
     <!-- I'm adding a cache here, I should have done do long ago. -->
     <directory>cache</directory>
     <filename>cache/cache.sqlite</filename>
   </cache>
-
+  
   <namingpatterns>
     <!-- This segment allows user-defined container naming patterns. These are fed 
-     straight to the standard Python re package, so see code or documentation 
-     for more info. -->
-
+	 straight to the standard Python re package, so see code or documentation 
+	 for more info. -->
+    
     <!-- This reads as "Any character, any number of times, then "CRP", then any 
-     character, any number of times". In other words, any string with "CRP" in 
-     it. -->
+	 character, any number of times". In other words, any string with "CRP" in 
+	 it. -->
     <pattern>(?:.*)(CRP)(?:.*)</pattern>
-
-    <!-- For those of you who are old-school: -->
+    
+    <!-- For those of you who are old-school. -->
     <pattern>(?:.*)(LBP)(?:,*)</pattern>
- 
-    <pattern>Sell</pattern>
-    <pattern>Refine</pattern>
-    <pattern>Unsorted</pattern>
-
   </namingpatterns>
   
   <valuation>
     <!-- The market segment allows you to control how prices are estimated. -->
-
+    
     <!-- This is rather rudimentary. Currently operations "min", "max" and "avg" 
-     (average) are supported. Leaf nodes should be query for obvious reasons. -->
+	 (average) are supported. Leaf nodes should be query for obvious reasons. -->
     <value>
       <avg>
         <query system = 'Jita' stat = 'sell'/>
         <query system = 'Jita' stat = 'buy'/>
       </avg>
     </value>
-
+    
     <!-- Set the refining return. The unit is percent. -->
     <refiningEfficiency>
-        <ore>78.522</ore>
-        <modules>55</modules>
+      <ore>78.522</ore>
+      <modules>55</modules>
     </refiningEfficiency>
-
+    
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
-     human time -->
+	 human time -->
     <cachetime>3600</cachetime> 
   </valuation>
   
-  <apikeys>
-    <!-- This segment contains EVE API keys. -->
-    
-    <!-- This key belongs to EvilMarvin - I keep it active for illustrative purposes,
-     though I may not have any suitable cans at the moment. -->      
-    <apikey note='EvilMarvin (Public CRP Key)' enabled='true'>
-      <keyID>2747696</keyID>
-      <vCode>oXQTmFJxbTGnUc1dVfUYarsgH6HU6JczuL5a7OwY2arbdSwNhWRl3uMAqS1xtHqC</vCode>
-    </apikey>
-
-  </apikeys>
-
   <outputs>
     <!-- I've added an output section to make custom output "easier". -->
     <output enabled='true' module='iidp'> 
-      <args outputprefix='' uniquefiles='true'/>
+      <args outputprefix = '' uniquefiles = 'true' 
+	    marketgroups = "{'Minerals': 0.95, 
+			    'Salvaged Materials': 0.95, 
+			    'Datacores': 0.95, 
+			    'Decryptors': 0.95}"/>
     </output>
   </outputs>
 </config>

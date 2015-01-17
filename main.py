@@ -24,7 +24,7 @@ def isEnabled(elm):
     return elm.get('enabled') in ['true', 'True', '1', 'yes', 'Yes', None]
 
 
-def main(configfile):
+def main(userconfig):
     
     versionfile = open('version', 'r')
     version = versionfile.read()
@@ -35,21 +35,27 @@ def main(configfile):
     print("Version: " + version)
     print("")
 
-    print('Using config file: ' + configfile)
+    print('Using userconfig:\t' + userconfig)
+    
+    userconfig = ElementTree.parse(open(userconfig, 'r'))
 
-    global configtree
-    configtree = ElementTree.parse(file(configfile))
+    configfile = userconfig.findtext(".//config")
+
+    print('Using config file:\t' + configfile)
+
+    configtree = ElementTree.parse(open(configfile, 'r'))
 
     db_file = configtree.findtext(".//updates/database/filename")
     cache_file = configtree.findtext("./cache/filename")
     cache_directory = configtree.findtext("./cache/directory")
-    
+
+    print("")
     print("   Database file:\t" + db_file)
     print("   Cache directory:\t" + cache_directory)
     print("   Cache file:\t\t" + cache_file)
     print("")
 
-    cache.initialize(configtree, cache_directory, cache_file)
+    cache.initialize(configtree, userconfig, cache_directory, cache_file)
 
     ## Good, do we need an update? 
     
@@ -74,7 +80,7 @@ def main(configfile):
 
     keys = []
 
-    for elm in configtree.iter('apikey'):
+    for elm in userconfig.iter('apikey'):
 
         if not isEnabled(elm): continue
         
@@ -104,5 +110,5 @@ if __name__ == "__main__":
 
     args = sys.argv[1:]
 
-    configfile = args[0] if args else "config.xml" 
+    configfile = args[0] if args else "userconfig.xml" 
     main(configfile)

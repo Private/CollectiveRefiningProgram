@@ -71,8 +71,16 @@ def fetchUpdate(configtree):
 
         if not file: continue
         
-        # Skip config files, naturally. 
-        if file.endswith('.xml'): continue
+        if file.endswith('.xml'):
+            # We need to be somewhat special about config files. 
+            if file == 'config.xml':
+                # config.xml is special, in that we simply overwrite it. 
+                break
+            
+            if os.path.exists(file):
+                # Does the config already exist?
+                # Just delete the file in the zip archive. 
+                os.remove(name)
 
         print("\t\t" + file)
         

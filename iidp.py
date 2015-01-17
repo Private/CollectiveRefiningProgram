@@ -3,6 +3,9 @@
 A Simple bit of output code, just dump some HTML.
 """
 
+import json
+
+
 def sellProfit(itm):
     if itm['value']:
         return itm['yieldValue'] - itm['value']
@@ -12,24 +15,19 @@ def sellProfit(itm):
 
 def sellString(itm):
 
-    template = "<b><span style='color:{}'>{}</span></b> {}"
-
-    def __perc(itm):
-        foo = float(min(itm['value'], itm['yieldValue']))
-        bar = float(max(itm['value'], itm['yieldValue']))
-        return "<small>({:.1%})</small>".format((bar - foo) / foo) if foo != float(0) else ""
+    template = "<b><span style='color:{}'>{}</span></b>"
 
     if not itm['value']:
-        return template.format('blue', 'Refine', "")
+        return template.format('blue', 'Refine')
 
     if itm['value'] < 0.90 * itm['yieldValue']:
-        return template.format('blue', 'Refine', __perc(itm))
+        return template.format('blue', 'Refine')
     if itm['value'] < itm['yieldValue']:
-        return template.format('green', 'Refine', __perc(itm))
+        return template.format('green', 'Refine')
     if itm['value'] < 1.10 * itm['yieldValue']:
-        return template.format('yellow', 'Sell', __perc(itm))
+        return template.format('yellow', 'Sell')
     else:
-        return template.format('red', 'Sell', __perc(itm))
+        return template.format('red', 'Sell')
     
 
 __document = """ 
@@ -39,6 +37,7 @@ __document = """
 <h1>{name}</h1>
 <p>{location}</p>
 {summary}
+{groups}
 <div>
 <h3>Item Breakdown</h3>
 <table border=1>
@@ -70,7 +69,7 @@ def totalYieldValue(container):
                    if itm['value'] else 0.0, container.attainableYield))
 
 
-def buildSummary(can):
+def buildSummary(can, grouppayouts):
 
     def totalYieldTable():
 
@@ -83,8 +82,8 @@ def buildSummary(can):
 
         for itm in totalYield:
             hrow += th(itm['name'])
-            trow += td("{:,}".format(itm['quantity']))
-            prow += td("{:,}".format(itm['value']))
+            trow += td("{:,.2f}".format(itm['quantity']))
+            prow += td("{:,.2f}".format(itm['value']))
 
         return ("<table border=1>\n" +
                 "<tr><th></th>" + hrow + "</tr>\n" + 
@@ -93,21 +92,79 @@ def buildSummary(can):
                 "</table>\n")
     
     top = ("<p>" +
-           "Total Sell Value: {:,} ISK <br>" +
-           "Total Reprocess Value: {:,} ISK <br>" +
+           "Total Sell Value: {:,.2f} ISK <br>" +
+           "Total Reprocess Value: {:,.2f} ISK <br>" +
            "</p>\n").format(totalSellValue(can),
                             totalYieldValue(can))
+
+    groups = ''.join(map(lambda group: "{group}: {:,.2f} ISK <br>".format(grouppayouts[group], group = group) 
+                         if grouppayouts[group] > 0 
+                         else '', 
+                         grouppayouts))
+
+    breakdown = ("<p>" +
+                 "<h4>LBP Payouts by group:</h4>" + 
+                 "Refining Yield: {:,.2f} ISK <br>" +
+                 "{groups}"
+                 "</p>\n").format(0.95 * totalYieldValue(can), groups = groups)
     
     payout = ("<p><b>" +
-              "LBP Payout: {:,} ISK <br>" +
-              "</b></p>").format(int(0.95 * totalYieldValue(can)))
+              "Total LBP Payout: {:,.2f} ISK <br>" +
+              "</b></p>").format(int(0.95 * totalYieldValue(can) +
+                                     sum([grouppayouts[group] for group in grouppayouts])))
 
     mid = ("<div>" +
            "Total Reprocessing Yield: <br>\n" +
            totalYieldTable() +
            "</div>\n")
     
-    return top + payout + mid           
+    return top + breakdown + payout + mid           
+
+
+def buildGroups(grouprates, groupitems):
+
+    # Do we actually have any groups to output?
+    if all([groupitems[group] == [] for group in groupitems]):
+        return ''
+
+    def buildGroup(group):
+
+        # No items, no output. 
+        if not groupitems[group]: return ''
+
+        __format = "<div><h3>{group}</h3><div>{summary}</div><div>{table}</div>"
+        __table = "<table border=1>{headers}{rows}</table>"
+
+        # Item - Quantity - Unit Sell Value - Total Sell Value
+        __headers = ("<tr>" +
+                     th("Item") +
+                     th("Quantity") +
+                     th("Unit Sell Value") +
+                     th("Total Sell Value") +
+                     "</tr>")
+        
+        total = sum(map(lambda itm: itm['quantity'] * itm['value'], groupitems[group]))
+
+        summary = ('<p>Total Value: {:,.2f} ISK</p>' +
+                   '<p>LBP Payout: {:,.2f} ISK</p')
+        summary = summary.format(total, float(grouprates[group]) * total)
+        
+        __row = "<tr><td>{}</td><td>{}</td><td>{:,.2f}</td><td>{:,.2f}</td></tr>"
+        __rows = '\n'.join(map(lambda itm: __row.format(itm['name'],
+                                                        itm['quantity'],
+                                                        itm['value'],
+                                                        itm['quantity'] * itm['value']), 
+                               sorted(groupitems[group],
+                                      key = lambda itm: -itm['quantity'] * itm['value'])))
+        
+        return __format.format(group = group,
+                               summary = summary,
+                               table = __table.format(headers = __headers,
+                                                      rows = __rows))
+
+    __format = '<div>{groups}</div>'
+
+    return __format.format(groups = ''.join(map(buildGroup, groupitems)))
 
 
 def buildHeaders(can):
@@ -117,7 +174,7 @@ def buildHeaders(can):
               th("Quantity") +
               th("Unit Mineral Value") +
               th("Unit Sell Value") +
-              th("Unit Sell Profit") +
+              th("<b>Unit Sell Profit</b>") +
               th("Liquidate") +
               th("Total Mineral Value") +
               th("Total Sell Value")) 
@@ -135,12 +192,12 @@ def buildRows(can):
                          name = itm['name'],
                          quantity = itm['quantity'])
 
-        row += td("{:,}".format(itm['yieldValue']))
-        row += td("{:,}".format(itm['value']) if itm['value'] else str(None))
-        row += td("{:,}".format(-sellProfit(itm)))
+        row += td("{:,.2f}".format(itm['yieldValue']))
+        row += td("{:,.2f}".format(itm['value']) if itm['value'] else str(None))
+        row += td("<b>{:,.2f}</b>".format(-sellProfit(itm)))
         row += td(sellString(itm))
-        row += td("{:,}".format(itm['quantity'] * itm['yieldValue']))
-        row += td("{:,}".format(itm['quantity'] * itm['value']) if itm['value'] else str(None))
+        row += td("{:,.2f}".format(itm['quantity'] * itm['yieldValue']))
+        row += td("{:,.2f}".format(itm['quantity'] * itm['value']) if itm['value'] else str(None))
 
         return "<tr>" + row + "</tr>"
     
@@ -151,6 +208,10 @@ def output(cans, args):
 
     prefix = args['outputprefix'] if args['outputprefix'] else ''
 
+    # The JSON roundabout is - well - I prefer not to use eval. This seems like a better hack.
+    grouprates = json.loads(args['marketgroups'].replace("'", "\""))
+    groupitems = {}    
+
     for can in cans:
         
         out = None
@@ -158,13 +219,25 @@ def output(cans, args):
             out = open(prefix + "{}.{}.html".format(can.name, can.itemID), 'w')
         else:
             out = open(prefix + "{}.html".format(can.name), 'w')            
-        
+
+        # We need to collect the items for the special marketgroups. 
+        groupitems = { group: 
+                       [itm for itm in can.contents if itm['groupName'] == group] 
+                       for group in grouprates.keys() }
+
+        grouppayouts  = { group:
+                          float(grouprates[group]) * 
+                          sum(map(lambda itm:  
+                                  itm['quantity'] * itm['value'], groupitems[group]))
+                          for group in grouprates.keys() }
+
         # Sort the contents, makes a nicer dump. 
         can.contents = sorted(can.contents, key=sellProfit)
 
         out.write(__document.format(name = can.name,
                                     location = can.locationName,
-                                    summary = buildSummary(can),
+                                    summary = buildSummary(can, grouppayouts),
+                                    groups = buildGroups(grouprates, groupitems),
                                     headers = buildHeaders(can),
                                     rows = buildRows(can)))        
         out.close()

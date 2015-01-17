@@ -18,9 +18,9 @@ global cache
 global cachedir
 
 global cfgtree
+global usrtree
 
-
-def initialize(configtree, directory, filename):
+def initialize(configtree, userconfig, directory, filename):
     """
 
     """
@@ -28,8 +28,11 @@ def initialize(configtree, directory, filename):
     global cache
     global cachedir
     global cfgtree
+    global usrtree
 
     cfgtree = configtree     
+    usrtree = userconfig
+
     cachedir = directory
 
     if not os.path.exists(directory):
@@ -116,7 +119,7 @@ def getContainers(key):
         # Good, a cached version was found. Use that shit!
 
         print("      AssetList: \tCACHED")
-        
+    
         return buildContainers(assetCache, locationsCache)
     else:
         # No cached version was found, dial the API servers! 
@@ -166,14 +169,20 @@ def containerIDs(assetlist):
 def buildContainers(assetlist, locations):
 
     global cfgtree
+    global usrtree
+
     global cachedir
 
     assets = ElementTree.parse(cachedir + '/' + assetlist)
     locations = ElementTree.parse(cachedir + '/' + locations)
     
-    # Grab the items marked for the buyback program. 
+    # Fetch the patterns from both the config and the userconfig. 
     patterns = [re.compile(pattern.text) 
                 for pattern in cfgtree.iter('pattern')];        
+    usrpatterns = [re.compile(pattern.text)
+                   for pattern in usrtree.iter('pattern')]
+
+    patterns = patterns + usrpatterns
             
     containers = [container.Container(item.get('itemID'),
                                       item.get('itemName')) 
