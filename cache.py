@@ -5,6 +5,7 @@ rainbowponyprincess@gmail.com
 
 import os
 import re
+import sys
 import time
 import urllib
 import httplib
@@ -155,12 +156,20 @@ def containerIDs(assetlist):
 
     tree = ElementTree.parse(cachedir + '/' + assetlist)
 
+    containerTypes = [3293, 3296, 3297, 3465, 3466, 
+                      3467, 11488, 11489, 11490, 16041, 
+                      16042, 16043, 16044, 16045, 17363, 
+                      17364, 17365, 17366, 17367, 17368]
+    
+    containerTypes = map(str, containerTypes)
+    
     # Grab the non-empty items. 
     containers = [{'itemID': item.get('itemID'), 
                    'typeID': item.get('typeID')} 
                   for item in tree.iter('row')
-                  if list(item)]
-
+                  if list(item) 
+                  and item.get('typeID') in containerTypes]
+                  
     # Turns out the AssetList will include corp offices as items. If you don't own the 
     # station, the Locations call will fail with error 135. This is a rather crude hack 
     # to get around that - ignore all offices.    
@@ -253,7 +262,14 @@ def fetchPage(key, page, additional_info = {}):
     conn = httplib.HTTPSConnection("api.eveonline.com")
     conn.request("GET", "/" + prefix + "/" + page + "?" + urllib.urlencode(info))
     response = conn.getresponse()
-        
+
+
+    if not response.status == 200:        
+        print("")
+        print("ERROR: EVE Online API Servers returned:")
+        print("{} - {}".format(response.status, response.reason))
+        sys.exit()
+
     body = response.read()
 
     filename = key.keyID + '.' + page
