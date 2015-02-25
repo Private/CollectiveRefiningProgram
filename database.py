@@ -132,6 +132,7 @@ def trimDatabase(filename):
     # This is a hardcoded list for now, deal with it. 
     tables = ['invTypes',
               'invGroups',
+              'invMarketGroups',
               'invTypeMaterials',
               'mapSolarSystems',
               'staStations']

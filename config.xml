@@ -65,7 +65,7 @@
     <!-- I've added an output section to make custom output "easier". -->
     <output enabled='true' module='iidp'> 
       <args outputprefix = '' uniquefiles = 'true' 
-	    marketgroups = "{'Minerals': 0.95, 
+	    marketgroups = "{'Mineral': 0.95, 
 			    'Salvaged Materials': 0.95, 
 			    'Datacores': 0.95, 
 			    'Generic Decryptor': 0.95}"/>
