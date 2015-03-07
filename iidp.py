@@ -214,11 +214,13 @@ def output(cans, args):
 
     for can in cans:
         
+        location = '[' + can.locationName.split()[0] + ']' 
+        
         out = None
         if args['uniquefiles'] in ['true', 'yes', 'True', 'Yes', '1']:
-            out = open(prefix + "{}.{}.html".format(can.name, can.itemID), 'w')
+            out = open(prefix + "{}.{}.{}.html".format(location, can.name, can.itemID), 'w')
         else:
-            out = open(prefix + "{}.html".format(can.name), 'w')            
+            out = open(prefix + "{}.{}.html".format(location, can.name), 'w')            
 
         # We need to collect the items for the special marketgroups. 
         groupitems = { group: 
@@ -229,8 +231,8 @@ def output(cans, args):
                           float(grouprates[group]) * 
                           sum(map(lambda itm:  
                                   itm['quantity'] * itm['value'], groupitems[group]))
-                          for group in grouprates.keys() }
-
+                          for group in grouprates.keys() }        
+        
         # Sort the contents, makes a nicer dump. 
         can.contents = sorted(can.contents, key=sellProfit)
 
