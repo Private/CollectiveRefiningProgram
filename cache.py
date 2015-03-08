@@ -171,8 +171,7 @@ def containerIDs(assetlist):
                   and item.get('typeID') in containerTypes]
                   
     # Turns out the AssetList will include corp offices as items. If you don't own the 
-    # station, the Locations call will fail with error 135. This is a rather crude hack 
-    # to get around that - ignore all offices.    
+    # station, the Locations call will fail with error 135. This is a fix: Ignore all offices.    
     return [c['itemID'] for c in containers if c['typeID'] != '27']
     
 

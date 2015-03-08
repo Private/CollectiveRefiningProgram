@@ -182,10 +182,13 @@ def buildHeaders(can):
     return "<tr>" + header + "</tr>"
 
 
-def buildRows(can):
+def buildRows(can, ignored_marketgroups):
 
     def buildRow(itm):
 
+        if itm['groupName'] in ignored_marketgroups: 
+            return ""
+    
         row = "<td>{group}</td><td>{name}</td><td>{quantity}</td>"
 
         row = row.format(group = itm['groupName'],
@@ -241,5 +244,5 @@ def output(cans, args):
                                     summary = buildSummary(can, grouppayouts),
                                     groups = buildGroups(grouprates, groupitems),
                                     headers = buildHeaders(can),
-                                    rows = buildRows(can)))        
+                                    rows = buildRows(can, grouprates.keys())))        
         out.close()
