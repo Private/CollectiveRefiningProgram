@@ -265,8 +265,9 @@ def fetchPage(key, page, additional_info = {}):
 
     if not response.status == 200:        
         print("")
-        print("ERROR: EVE Online API Servers returned:")
-        print("{} - {}".format(response.status, response.reason))
+        print("ERROR! ({})".format(page))
+        print("EVE Online API Servers returned:")
+        print("\t{} - {}".format(response.status, response.reason))
         sys.exit()
 
     body = response.read()

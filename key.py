@@ -65,13 +65,14 @@ class Character:
         elif not requestedName:
             
             print("   WARNING: Multiple characters found - defaulting to '" + charNames[0] + "'")
-            self.charID[0]
+            self.charID = charIDs[0]
 
         else:
 
             try:
                 # Look for the requested name.
-                self.charID = charNames.index(requestedName) 
+                self.charID = charIDs[charNames.index(requestedName)]
+                
             except e:
                 # Default to the first charID.
                 print("   WARNING: No character matched name '" + requestedName + "'")
