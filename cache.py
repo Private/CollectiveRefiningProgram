@@ -13,7 +13,9 @@ import sqlite3 as sql
 import xml.etree.ElementTree as ElementTree
 
 import database as db
+
 import container
+import blueprint
 
 global cache
 global cachedir
@@ -87,7 +89,7 @@ def getOutposts():
 
     global cachedir
 
-    cache = getCache("Outposts")
+    cache = getIfCached("Outposts")
 
     if cache:
         # All right! We already got a list of outposts, we're golden.
@@ -114,8 +116,8 @@ def getContainers(key):
     print("")
     print("   Processing key: " + key.note)
 
-    assetCache = getCache(key.keyID + "/AssetList")
-    locationsCache = getCache(key.keyID + "/Locations")
+    assetCache = getIfCached(key.keyID + "/AssetList")
+    locationsCache = getIfCached(key.keyID + "/Locations")
 
     if assetCache:
         # Good, a cached version was found. Use that shit!
@@ -147,6 +149,33 @@ def getContainers(key):
         putCache(key.keyID + "/Locations", cachedUntil, locationsFile)
 
         return buildContainers(assetFile, locationsFile)
+
+
+def getBlueprints(key):
+        
+    global cachedir
+
+    print("")
+    print("   Processing key: " + key.note)
+
+    blueprintCache = getIfCached(key.keyID + "/Blueprints")
+
+    if blueprintCache:
+        # Good, a cached version was found. Use that shit!
+
+        print("      AssetList: \tCACHED")
+    
+        return buildBlueprints(blueprintCache)
+    else:
+        # No cached version was found, dial the API servers! 
+
+        print("      AssetList: \tNOT CACHED")
+
+        (cachedUntil, blueprintFile) = fetchPage(key, 'Blueprints.xml.aspx')
+        
+        putCache(key.keyID + "/Blueprints", cachedUntil, blueprintFile)
+
+        return buildBlueprints(blueprintFile)
 
 
 ## --------------------------------------------------------------- ##
@@ -205,10 +234,20 @@ def buildContainers(assetlist, locations):
     return containers
     
 
+def buildBlueprints(blueprints):
+
+    global cachedir
+
+    blueprints = ElementTree.parse(cachedir + '/' + blueprints)
+    
+    return [blueprint.Blueprint(elm) for elm in blueprints.iter('row')]
+
+
+
 ## --------------------------------------------------------------- ##
 
 
-def getCache(cacheName):
+def getIfCached(cacheName):
     """
     Return the cached API response, or None if no suitable cache is available. 
     """
@@ -473,7 +512,7 @@ def marketStat(typeIDs, systemID):
     conn.request("POST", "/api/marketstat", 
                  urllib.urlencode(params) + '&' + typestr)
     response = conn.getresponse()    
-        
+
     return ElementTree.parse(response)
     
 
@@ -530,7 +569,7 @@ def evalValuation(typeIDs):
 
         cursor = cache.cursor()
         for typeID in typeIDs:
-            # Deathly super-super-hack! Don't do this, EVER!
+            # Deathly super-super-hack! Don't do this, EVER! It's not okay. 
             cursor.execute("SELECT " + elm.get('stat') + " FROM marketCache WHERE typeID = ? AND systemID = ?",
                            [typeID, systemID])
 

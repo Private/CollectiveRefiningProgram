@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 """
 Kristoffer Langeland Knudsen
 rainbowponyprincess@gmail.com
@@ -18,10 +20,19 @@ import cache
 import update
 import database
 import container
+import blueprint
 
 
 def isEnabled(elm):    
     return elm.get('enabled') in ['true', 'True', '1', 'yes', 'Yes', None]
+
+
+
+class FakeContainer:
+    
+    def __init__(self, contents):
+        self.name = "Fake Container."
+        self.contents = contents
 
 
 def main(userconfig):
@@ -73,6 +84,7 @@ def main(userconfig):
 
     # Load the game data.
     
+    blueprint.initialize(configtree)
     container.initialize(configtree)
     database.initialize(configtree)
     
@@ -94,16 +106,69 @@ def main(userconfig):
     for k in keys:
         containers += cache.getContainers(k)
 
+    
+    print("")
+    print("Fetching Blueprint List...")
+
+    blueprints = []
+
+    for k in keys:
+        blueprints += cache.getBlueprints(k)
+
+    
+    for c in containers:
+        c.addBlueprintInfo(blueprints)
+    
     print("")
     print("Generating Output...")        
 
-    for o in configtree.iter('output'):
+    totallyNotFakeContainer = FakeContainer([bp for bp in blueprints
+                                             if not bp.isBPO()])
 
-        if not isEnabled(o): continue
+    for c in [totallyNotFakeContainer]: #containers:
 
-        module = __import__(o.get('module'))
-        module.output(containers, o.find("args").attrib)
+        if not c.contents:
+            continue
 
+        print("")
+        print(c.name)
+
+        materials = {}
+
+        for bp in c.contents:
+
+            if bp.isBPO():
+                continue
+
+            for typeID, quantity in bp.getRecursiveMaterials().items():
+                if typeID in materials:
+                    materials[typeID] += quantity
+                else:
+                    materials[typeID] = quantity
+
+
+        def getTypeName(typeID):
+            cursor = database.cursor()
+            cursor.execute("SELECT typeName "
+                           "FROM invTypes "
+                           "WHERE typeID = ?",
+                           [typeID])
+
+            (typeName, ) = cursor.fetchone()
+            return typeName
+
+        required = { getTypeName(typeID): quantity
+                     for typeID, quantity in materials.items() }
+            
+        print("")
+        print("")
+        print("")
+        print("")
+        print("")
+        
+        for typeName, quantity in required.items():
+            print("{:<16,}\t{}".format(quantity, typeName))
+    
 
 if __name__ == "__main__":
 

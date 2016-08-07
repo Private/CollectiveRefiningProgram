@@ -61,16 +61,20 @@ class Container:
         print("         " + str(self.locationName))
         print("         Containing " + str(len(self.contents)) + " item types")
 
-        # So far, so good. Go though the contents and add information from the 
-        # EVE Online database dump.
 
-        self.__itmNames()
-        self.__itmYield()
-        self.__itmValue()
+    def addBlueprintInfo(self, blueprints):
+
+        print("")
+        print("\t\tSetting blueprint info on container: " + self.name)
         
-        self.__itmYieldValue()
+        blueprints = [blueprint for blueprint in blueprints
+                      if blueprint.locationID == self.itemID]
 
-        self.__totalYield()
+
+        print("\t\tFound {} blueprints.".format(len(blueprints)))
+
+        self.contents = blueprints
+
 
     ## --------------------------------------------------------------- ##
     
@@ -144,147 +148,3 @@ class Container:
         
         print("WARNING: Found no location for " + self.name)
 
-        
-    def __itmNames(self):
-        
-        for itm in self.contents:
-            # Look up the name in the database, save it.             
-            cursor = db.cursor()
-            cursor.execute("SELECT typeName, groupID, portionSize, volume " + 
-                           "FROM invTypes " + 
-                           "WHERE typeID = ?",
-                           [itm['typeID']])
-
-            (name, groupID, portionSize, volume) = cursor.fetchone()
-            itm['name'] = name
-            itm['volume'] = volume
-            itm['portionSize'] = portionSize
-
-            cursor = db.cursor()
-            cursor.execute("SELECT groupName " +
-                           "FROM invGroups " +
-                           "WHERE groupID = ?", 
-                           [groupID])
-            
-            groupName = cursor.fetchone()[0]
-            itm['groupName'] = groupName
-
-
-    def __itmValue(self):
-
-        typeIDs = map(lambda itm: itm['typeID'], self.contents)
-        prices = cache.getValues(typeIDs)            
-        
-        # Merge prices with the contents list. 
-        for itm in self.contents:
-            itm['value'] = prices[itm['typeID']]
-
-
-    def __itmYield(self):
-    
-        for itm in self.contents:
-
-            itm['mineralContent'] = []
-            itm['attainableYield'] = []
-                
-            cursor = db.cursor()
-            cursor.execute("SELECT portionSize FROM invTypes WHERE typeID = ?", [itm['typeID']])
-            (portionSize, ) = cursor.fetchone()
-            
-            cursor.execute("SELECT materialTypeID, quantity " +
-                           "FROM invTypeMaterials " +
-                           "WHERE typeID = ?",
-                           [itm['typeID']])            
-
-            for (id, n) in cursor.fetchall():
-
-                cursor.execute("SELECT typeName FROM invTypes WHERE typeID = ?", [id])
-                (name, ) = cursor.fetchone()
-                                
-                itm['mineralContent'] += [{'name' : name,
-                                           'typeID' : str(id),
-                                           'quantity' : float(n) / float(portionSize)}]
-                itm['attainableYield'] += [{'name' : name,
-                                            'typeID' : str(id),
-                                            'quantity' : float(self.__refEff(itm['typeID']) * n) / float(portionSize)}]
-
-
-    def __itmYieldValue(self):
-    
-        for itm in self.contents:
-            
-            typeIDs = map(lambda r: r['typeID'], itm['attainableYield'])
-            prices = cache.getValues(typeIDs)
-
-            itm['yieldValue'] = sum(map(lambda r: r['quantity'] * prices[r['typeID']], itm['attainableYield']))
-
-
-    def __totalYield(self):
-
-        # Some utility functions. 
-        def __contains(ref_yield, typeID):
-            return any(map(lambda r: r['typeID'] == typeID, ref_yield))
-
-        def __update(ref_yield, typeID, quantity):
-            for r in ref_yield:
-                if r['typeID'] == typeID:
-                    r['quantity'] += quantity
-
-        def __insert(ref_yield, typeID, name, quantity):
-            ref_yield += [{'name' : name,
-                           'typeID' : typeID,
-                           'quantity' : quantity}]
-
-        def __condense(ref_yield, key):                   
-            for itm in self.contents:            
-                for r in itm[key]:                
-                    if __contains(ref_yield, r['typeID']):
-                        __update(ref_yield, 
-                                r['typeID'], 
-                                r['quantity'] * itm['quantity'])
-                    else:
-                        __insert(ref_yield, 
-                                r['typeID'], 
-                                r['name'], 
-                                r['quantity'] * itm['quantity'])
-
-        __condense(self.mineralContent, 'mineralContent')
-        __condense(self.attainableYield, 'attainableYield')
-                                                          
-        # Some pricing for the refinement yields would be nice as well.
-        typeIDs = map(lambda r: r['typeID'], self.mineralContent + self.attainableYield)
-        prices = cache.getValues(typeIDs)
-
-        for r in self.mineralContent + self.attainableYield:
-            r['value'] = prices[r['typeID']]
-        
-    ## --------------------------------------------------------------- ##
-
-    def __isOre(self, typeID):
-
-        cursor = db.cursor()
-        cursor.execute("SELECT groupID, marketGroupID FROM invTypes WHERE typeID = ?", [typeID])
-        (groupID, marketGroupID) = cursor.fetchone()
-
-        if not marketGroupID:
-            return False
-        
-        # I'm using the market groups, the parent group for all the ore is "Ore" - simple enough. 
-        cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [marketGroupID])
-        (marketGroupName, parentGroupID) = cursor.fetchone()  
-        
-        cursor.execute("SELECT marketGroupName, parentGroupID FROM invMarketGroups WHERE marketGroupID = ?", [parentGroupID])
-        (marketGroupName, parentGroupID) = cursor.fetchone()
-        
-        return marketGroupName == 'Ore'
-    
-    def __refEff(self, typeID):
-
-        global cfgtree
-    
-        if self.__isOre(typeID):
-            __lookup = ".//valuation/refiningEfficiency/ore"
-        else:
-            __lookup = ".//valuation/refiningEfficiency/modules"
-        
-        return float(cfgtree.findtext(__lookup)) / 100

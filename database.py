@@ -115,38 +115,3 @@ def updateDatabase(configtree):
     
     md5file.write(md5.read())
     
-    print("Trimming database...")
-
-    try:
-        trimDatabase(filename)
-        print("\tOK")
-    except:
-        print("\tFAILED - This is common, don't worry.")
-        
-    print("")
-    print("")
-
-
-def trimDatabase(filename):
-
-    # This is a hardcoded list for now, deal with it. 
-    tables = ['invTypes',
-              'invGroups',
-              'invMarketGroups',
-              'invTypeMaterials',
-              'mapSolarSystems',
-              'staStations']
-
-    db = sql.connect(filename)
-
-    cursor = db.cursor()
-    cursor.execute("SELECT name, type FROM sqlite_master WHERE type='table'")
-
-    for name, _ in cursor.fetchall():
-        
-        if name not in tables:
-            db.execute("DROP TABLE " + name + ";")
-            db.commit()
-
-    db.execute("VACUUM")
-    db.close()

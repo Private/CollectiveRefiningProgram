@@ -56,6 +56,11 @@
       <modules>55</modules>
     </refiningEfficiency>
     
+    <stationProductionEfficiency>
+      <default>0.95</default>
+    </stationProductionEfficiency>
+
+
     <!-- Number of seconds the market data is cached. 3600 seconds is one hour, 
 	 human time -->
     <cachetime>3600</cachetime> 
@@ -63,12 +68,8 @@
   
   <outputs>
     <!-- I've added an output section to make custom output "easier". -->
-    <output enabled='true' module='iidp'> 
-      <args outputprefix = '' uniquefiles = 'true' 
-	    marketgroups = "{'Mineral': 0.95, 
-			    'Salvaged Materials': 0.95, 
-			    'Datacores': 0.95, 
-			    'Generic Decryptor': 0.95}"/>
+    <output enabled='true' module='blueprints'> 
+      <args />
     </output>
   </outputs>
 </config>
